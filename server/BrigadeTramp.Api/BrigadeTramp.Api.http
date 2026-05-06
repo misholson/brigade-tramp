@@ -1,0 +1,6 @@
+@BrigadeTramp.Api_HostAddress = http://localhost:5062
+
+GET {{BrigadeTramp.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,14 @@
+namespace BrigadeTramp.Api.Models;
+
+public class Singer
+{
+    public int Id { get; set; }
+    public string BadgeName { get; set; } = "";
+    public string FirstName { get; set; } = "";
+    public string LastName { get; set; } = "";
+    public Part Part { get; set; }
+    public int EventId { get; set; }
+    public Event Event { get; set; } = null!;
+    public string Code { get; set; } = "";
+    public SingerStatus Status { get; set; } = SingerStatus.Active;
+}

@@ -1,0 +1,25 @@
+export type Part = 'Tenor' | 'Lead' | 'Baritone' | 'Bass';
+export type SingerStatus = 'Active' | 'Inactive' | 'Optional';
+
+export interface SingerDto {
+  id: number;
+  badgeName: string;
+  firstName: string;
+  lastName: string;
+  part: Part;
+  code: string;
+  status: SingerStatus;
+}
+
+export interface SingerDetailDto {
+  singer: SingerDto;
+  allSingers: SingerDto[];
+  sungWithIds: number[];
+}
+
+export interface EventWithSingersDto {
+  id: number;
+  name: string;
+  date: string;
+  singers: SingerDto[];
+}

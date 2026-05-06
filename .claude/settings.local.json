@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Bash(dotnet new *)",
+      "PowerShell(Get-ChildItem \"C:\\\\repos\\\\brigade-tramp\\\\server\\\\BrigadeTramp.Api\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object -ExpandProperty FullName)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)"
+    ]
+  }
+}
