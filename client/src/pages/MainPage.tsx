@@ -6,6 +6,7 @@ import { fetchSingerByCode, toggleSungWith } from '../store/singerSlice';
 import type { Part, SingerDto } from '../types';
 import PartGroup from '../components/PartGroup';
 import TrampBanner from '../components/TrampBanner';
+import HelpCard from '../components/HelpCard';
 
 const PART_ORDER: Part[] = ['Tenor', 'Lead', 'Baritone', 'Bass'];
 
@@ -67,6 +68,7 @@ export default function MainPage() {
   return (
     <Container>
       <PageTitle>Hi, {singer.badgeName}!</PageTitle>
+      <HelpCard />
       <TrampBanner isTramp={isTramp} isSuperTramp={isSuperTramp} />
       {grouped.map(({ part, singers }) => (
         <PartGroup
