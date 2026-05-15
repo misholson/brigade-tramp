@@ -45,6 +45,7 @@ using (var scope = app.Services.CreateScope())
             "CREATE TABLE IF NOT EXISTS Contests (Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL DEFAULT '', EventId INTEGER NOT NULL)",
             "CREATE TABLE IF NOT EXISTS ContestQuartets (Id INTEGER PRIMARY KEY AUTOINCREMENT, ContestId INTEGER NOT NULL, Name TEXT NOT NULL DEFAULT '', Score REAL)",
             "ALTER TABLE ContestQuartets ADD COLUMN Name TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ContestQuartets ADD COLUMN Score2 REAL",
             "CREATE TABLE IF NOT EXISTS ContestQuartetSingers (QuartetId INTEGER NOT NULL, SingerId INTEGER NOT NULL, PRIMARY KEY (QuartetId, SingerId))",
         }
         : new[]
@@ -55,6 +56,7 @@ using (var scope = app.Services.CreateScope())
             "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='Contests') CREATE TABLE Contests (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(200) NOT NULL DEFAULT '', EventId INT NOT NULL)",
             "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='ContestQuartets') CREATE TABLE ContestQuartets (Id INT IDENTITY(1,1) PRIMARY KEY, ContestId INT NOT NULL, Name NVARCHAR(200) NOT NULL DEFAULT '', Score DECIMAL(8,2) NULL)",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='Name') ALTER TABLE ContestQuartets ADD Name NVARCHAR(200) NOT NULL DEFAULT ''",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='Score2') ALTER TABLE ContestQuartets ADD Score2 DECIMAL(8,2) NULL",
             "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='ContestQuartetSingers') CREATE TABLE ContestQuartetSingers (QuartetId INT NOT NULL, SingerId INT NOT NULL, PRIMARY KEY (QuartetId, SingerId))",
         };
 

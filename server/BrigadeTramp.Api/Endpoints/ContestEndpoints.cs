@@ -117,13 +117,22 @@ public static class ContestEndpoints
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
+
+        app.MapPatch("/api/quartets/{id:int}/score2", async (int id, SetQuartetScore2Dto dto, AppDbContext db) =>
+        {
+            var quartet = await db.ContestQuartets.FindAsync(id);
+            if (quartet is null) return Results.NotFound();
+            quartet.Score2 = dto.Score2;
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
     }
 
     static ContestDto ToDto(Contest c) => new(
         c.Id, c.Name, c.EventId,
         c.Quartets
             .Select(q => new ContestQuartetDto(
-                q.Id, q.Name, q.Score,
+                q.Id, q.Name, q.Score, q.Score2,
                 q.SingerLinks
                     .Select(sl => new ContestSingerDto(
                         sl.Singer.Id, sl.Singer.BadgeName, sl.Singer.FirstName, sl.Singer.LastName, sl.Singer.Part.ToString()))

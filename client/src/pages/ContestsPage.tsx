@@ -315,6 +315,7 @@ interface ContestQuartet {
   id: number;
   name: string;
   score: number | null;
+  score2: number | null;
   singers: ContestSinger[];
 }
 
@@ -341,6 +342,7 @@ export default function ContestsPage() {
   const [newName, setNewName] = useState('');
   const [editingName, setEditingName] = useState<{ id: number; name: string } | null>(null);
   const [scores, setScores] = useState<Record<number, string>>({});
+  const [scores2, setScores2] = useState<Record<number, string>>({});
   const [names, setNames] = useState<Record<number, string>>({});
   const [generating, setGenerating] = useState<number | null>(null);
 
@@ -358,12 +360,15 @@ export default function ContestsPage() {
       setEventName(data.eventName);
       setContests(data.contests);
       const scoreMap: Record<number, string> = {};
+      const score2Map: Record<number, string> = {};
       const nameMap: Record<number, string> = {};
       data.contests.forEach(c => c.quartets.forEach(q => {
         scoreMap[q.id] = q.score != null ? String(q.score) : '';
+        score2Map[q.id] = q.score2 != null ? String(q.score2) : '';
         nameMap[q.id] = q.name;
       }));
       setScores(scoreMap);
+      setScores2(score2Map);
       setNames(nameMap);
     } finally {
       setLoading(false);
@@ -441,6 +446,17 @@ export default function ContestsPage() {
     });
   };
 
+  const handleScore2Save = async (quartetId: number) => {
+    const raw = scores2[quartetId] ?? '';
+    const score2 = raw === '' ? null : parseFloat(raw);
+    if (raw !== '' && isNaN(score2 as number)) return;
+    await fetch(`/api/quartets/${quartetId}/score2`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify({ score2 }),
+    });
+  };
+
   if (!eventId) {
     return (
       <Container>
@@ -454,9 +470,21 @@ export default function ContestsPage() {
       return <EmptyMsg>No quartets yet — click Generate Quartets.</EmptyMsg>;
     }
 
-    const fmt = (quartet: ContestQuartet, part: string) => {
+    // Map singerId → ordered list of quartet indices they appear in
+    const singerQuartetIndices: Record<number, number[]> = {};
+    contest.quartets.forEach((quartet, idx) => {
+      quartet.singers.forEach(s => {
+        (singerQuartetIndices[s.id] ??= []).push(idx);
+      });
+    });
+
+    const fmt = (quartet: ContestQuartet, quartetIdx: number, part: string) => {
       const s = quartet.singers.find(s => s.part === part);
-      return s ? `${s.badgeName} ${s.lastName}` : '—';
+      if (!s) return '—';
+      const name = `${s.badgeName} ${s.lastName}`;
+      const indices = singerQuartetIndices[s.id];
+      if (indices.length < 2) return name;
+      return `${name} (${indices.indexOf(quartetIdx) + 1})`;
     };
 
     return (
@@ -472,7 +500,8 @@ export default function ContestsPage() {
                 <Th $part="Lead">Lead</Th>
                 <Th $part="Baritone">Baritone</Th>
                 <Th $part="Bass">Bass</Th>
-                <Th>Score</Th>
+                <Th>Round 1 Score</Th>
+                <Th>Round 2 Score</Th>
               </tr>
             </thead>
             <tbody>
@@ -488,10 +517,10 @@ export default function ContestsPage() {
                       onKeyDown={e => { if (e.key === 'Enter') handleNameSave(quartet.id); }}
                     />
                   </Td>
-                  <Td>{fmt(quartet, 'Tenor')}</Td>
-                  <Td>{fmt(quartet, 'Lead')}</Td>
-                  <Td>{fmt(quartet, 'Baritone')}</Td>
-                  <Td>{fmt(quartet, 'Bass')}</Td>
+                  <Td>{fmt(quartet, idx, 'Tenor')}</Td>
+                  <Td>{fmt(quartet, idx, 'Lead')}</Td>
+                  <Td>{fmt(quartet, idx, 'Baritone')}</Td>
+                  <Td>{fmt(quartet, idx, 'Bass')}</Td>
                   <Td>
                     <ScoreInput
                       type="number"
@@ -501,6 +530,17 @@ export default function ContestsPage() {
                       onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
                       onBlur={() => handleScoreSave(quartet.id)}
                       onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
+                    />
+                  </Td>
+                  <Td>
+                    <ScoreInput
+                      type="number"
+                      step="0.1"
+                      value={scores2[quartet.id] ?? ''}
+                      placeholder="—"
+                      onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                      onBlur={() => handleScore2Save(quartet.id)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
                     />
                   </Td>
                 </tr>
@@ -524,7 +564,7 @@ export default function ContestsPage() {
                 />
               </MobileCardTop>
               <MobileScoreRow>
-                <MobileScoreLabel>Score:</MobileScoreLabel>
+                <MobileScoreLabel>Round 1:</MobileScoreLabel>
                 <MobileScoreInput
                   type="number"
                   step="0.1"
@@ -534,18 +574,23 @@ export default function ContestsPage() {
                   onBlur={() => handleScoreSave(quartet.id)}
                   onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
                 />
+                <MobileScoreLabel>Round 2:</MobileScoreLabel>
+                <MobileScoreInput
+                  type="number"
+                  step="0.1"
+                  value={scores2[quartet.id] ?? ''}
+                  placeholder="—"
+                  onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                  onBlur={() => handleScore2Save(quartet.id)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
+                />
               </MobileScoreRow>
-              {PARTS.map(part => {
-                const singer = quartet.singers.find(s => s.part === part);
-                return (
-                  <MobileSingerRow key={part}>
-                    <PartDot $part={part}>{part[0]}</PartDot>
-                    <MobileSingerName>
-                      {singer ? `${singer.badgeName} ${singer.lastName}` : '—'}
-                    </MobileSingerName>
-                  </MobileSingerRow>
-                );
-              })}
+              {PARTS.map(part => (
+                <MobileSingerRow key={part}>
+                  <PartDot $part={part}>{part[0]}</PartDot>
+                  <MobileSingerName>{fmt(quartet, idx, part)}</MobileSingerName>
+                </MobileSingerRow>
+              ))}
             </MobileQuartetCard>
           ))}
         </MobileOnly>
