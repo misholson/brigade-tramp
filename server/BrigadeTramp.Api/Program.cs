@@ -42,12 +42,20 @@ using (var scope = app.Services.CreateScope())
             "ALTER TABLE Singers ADD COLUMN Code TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE Singers ADD COLUMN Status TEXT NOT NULL DEFAULT 'Active'",
             "ALTER TABLE Singers ADD COLUMN Email TEXT NOT NULL DEFAULT ''",
+            "CREATE TABLE IF NOT EXISTS Contests (Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL DEFAULT '', EventId INTEGER NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS ContestQuartets (Id INTEGER PRIMARY KEY AUTOINCREMENT, ContestId INTEGER NOT NULL, Name TEXT NOT NULL DEFAULT '', Score REAL)",
+            "ALTER TABLE ContestQuartets ADD COLUMN Name TEXT NOT NULL DEFAULT ''",
+            "CREATE TABLE IF NOT EXISTS ContestQuartetSingers (QuartetId INTEGER NOT NULL, SingerId INTEGER NOT NULL, PRIMARY KEY (QuartetId, SingerId))",
         }
         : new[]
         {
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='Code') ALTER TABLE Singers ADD Code NVARCHAR(10) NOT NULL DEFAULT ''",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='Status') ALTER TABLE Singers ADD Status NVARCHAR(10) NOT NULL DEFAULT 'Active'",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='Email') ALTER TABLE Singers ADD Email NVARCHAR(254) NOT NULL DEFAULT ''",
+            "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='Contests') CREATE TABLE Contests (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(200) NOT NULL DEFAULT '', EventId INT NOT NULL)",
+            "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='ContestQuartets') CREATE TABLE ContestQuartets (Id INT IDENTITY(1,1) PRIMARY KEY, ContestId INT NOT NULL, Name NVARCHAR(200) NOT NULL DEFAULT '', Score DECIMAL(8,2) NULL)",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='Name') ALTER TABLE ContestQuartets ADD Name NVARCHAR(200) NOT NULL DEFAULT ''",
+            "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='ContestQuartetSingers') CREATE TABLE ContestQuartetSingers (QuartetId INT NOT NULL, SingerId INT NOT NULL, PRIMARY KEY (QuartetId, SingerId))",
         };
 
     foreach (var sql in patches)
@@ -72,5 +80,6 @@ app.MapSingerEndpoints();
 app.MapEventEndpoints();
 app.MapImportEndpoints();
 app.MapQrPdfEndpoints();
+app.MapContestEndpoints();
 
 app.Run();

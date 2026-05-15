@@ -5,6 +5,7 @@ import MainPage from './pages/MainPage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import ImportPage from './pages/ImportPage';
+import ContestsPage from './pages/ContestsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -22,6 +23,11 @@ export default function App() {
           <Route path="/import" element={
             <ProtectedRoute>
               <ImportPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/contests" element={
+            <ProtectedRoute>
+              <ContestsPage />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/login" replace />} />

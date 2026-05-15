@@ -235,6 +235,7 @@ export default function AdminPage() {
           onDownloadPdf={handleDownloadPdf}
           onAddSinger={id => setSingerForm(emptySingerForm(id))}
           onEditSinger={openEditSinger}
+          onContests={id => navigate(`/contests?eventId=${id}`)}
         />
       ))}
 

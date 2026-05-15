@@ -8,11 +8,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Singer> Singers => Set<Singer>();
     public DbSet<SingerSungWith> SingerSungWiths => Set<SingerSungWith>();
+    public DbSet<Contest> Contests => Set<Contest>();
+    public DbSet<ContestQuartet> ContestQuartets => Set<ContestQuartet>();
+    public DbSet<ContestQuartetSinger> ContestQuartetSingers => Set<ContestQuartetSinger>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SingerSungWith>()
             .HasKey(s => new { s.SingerId, s.SungWithSingerId });
+
+        modelBuilder.Entity<ContestQuartetSinger>()
+            .HasKey(x => new { x.QuartetId, x.SingerId });
 
         modelBuilder.Entity<Singer>()
             .HasIndex(s => s.Code)
