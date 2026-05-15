@@ -64,7 +64,7 @@ public static class ContestEndpoints
             if (contest is null) return Results.NotFound();
 
             var singers = await db.Singers
-                .Where(s => s.EventId == contest.EventId && s.Status != SingerStatus.Inactive)
+                .Where(s => s.EventId == contest.EventId && s.Status != SingerStatus.Inactive && s.Status != SingerStatus.Optional)
                 .ToListAsync();
 
             var byPart = Enum.GetValues<Part>()
@@ -83,6 +83,10 @@ public static class ContestEndpoints
                 .Select(_ => new ContestQuartet { ContestId = id })
                 .ToList();
             db.ContestQuartets.AddRange(quartets);
+            await db.SaveChangesAsync();
+
+            for (int i = 0; i < quartets.Count; i++)
+                quartets[i].Name = $"Quartet {i + 1}";
             await db.SaveChangesAsync();
 
             var assignments = byPart.SelectMany(kv =>
