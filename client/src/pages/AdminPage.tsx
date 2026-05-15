@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
-import { fetchEvents, createEvent, updateEvent, deleteEvent, addSinger } from '../store/adminSlice';
+import { fetchEvents, createEvent, updateEvent, deleteEvent, addSinger, editSinger } from '../store/adminSlice';
 import { clearCredentials } from '../store/authSlice';
-import type { EventWithSingersDto } from '../types';
+import type { EventWithSingersDto, SingerDto } from '../types';
 import EventCard from '../components/EventCard';
 
 const Container = styled.div`
@@ -118,11 +118,12 @@ interface SingerFormState {
   firstName: string;
   lastName: string;
   part: string;
+  email: string;
   status: string;
 }
 
 const emptySingerForm = (eventId: number): SingerFormState => ({
-  eventId, badgeName: '', firstName: '', lastName: '', part: 'Tenor', status: 'Active',
+  eventId, badgeName: '', firstName: '', lastName: '', part: 'Tenor', email: '', status: 'Active',
 });
 
 export default function AdminPage() {
@@ -136,6 +137,7 @@ export default function AdminPage() {
   const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '' });
 
   const [singerForm, setSingerForm] = useState<SingerFormState | null>(null);
+  const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number }) | null>(null);
 
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
@@ -187,6 +189,25 @@ export default function AdminPage() {
     setSingerForm(null);
   };
 
+  const openEditSinger = (singer: SingerDto) => {
+    setEditSingerForm({
+      singerId: singer.id,
+      eventId: 0,
+      badgeName: singer.badgeName,
+      firstName: singer.firstName,
+      lastName: singer.lastName,
+      part: singer.part,
+      email: singer.email,
+      status: singer.status,
+    });
+  };
+
+  const handleSaveEditSinger = () => {
+    if (!editSingerForm) return;
+    dispatch(editSinger(editSingerForm));
+    setEditSingerForm(null);
+  };
+
   return (
     <Container>
       <Header>
@@ -213,6 +234,7 @@ export default function AdminPage() {
           onImport={id => navigate(`/import?eventId=${id}`)}
           onDownloadPdf={handleDownloadPdf}
           onAddSinger={id => setSingerForm(emptySingerForm(id))}
+          onEditSinger={openEditSinger}
         />
       ))}
 
@@ -249,6 +271,74 @@ export default function AdminPage() {
         </Overlay>
       )}
 
+      {/* Edit singer modal */}
+      {editSingerForm && (
+        <Overlay onClick={() => setEditSingerForm(null)}>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Edit Singer</ModalTitle>
+            <Field>
+              <Label>Badge Name</Label>
+              <Input
+                value={editSingerForm.badgeName}
+                onChange={e => setEditSingerForm(f => f && ({ ...f, badgeName: e.target.value }))}
+                autoFocus
+              />
+            </Field>
+            <Field>
+              <Label>First Name</Label>
+              <Input
+                value={editSingerForm.firstName}
+                onChange={e => setEditSingerForm(f => f && ({ ...f, firstName: e.target.value }))}
+              />
+            </Field>
+            <Field>
+              <Label>Last Name</Label>
+              <Input
+                value={editSingerForm.lastName}
+                onChange={e => setEditSingerForm(f => f && ({ ...f, lastName: e.target.value }))}
+              />
+            </Field>
+            <Field>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={editSingerForm.email}
+                onChange={e => setEditSingerForm(f => f && ({ ...f, email: e.target.value }))}
+              />
+            </Field>
+            <Field>
+              <Label>Part</Label>
+              <Select
+                value={editSingerForm.part}
+                onChange={e => setEditSingerForm(f => f && ({ ...f, part: e.target.value }))}
+              >
+                <option>Tenor</option>
+                <option>Lead</option>
+                <option>Baritone</option>
+                <option>Bass</option>
+              </Select>
+            </Field>
+            <Field>
+              <Label>Status</Label>
+              <Select
+                value={editSingerForm.status}
+                onChange={e => setEditSingerForm(f => f && ({ ...f, status: e.target.value }))}
+              >
+                <option>Active</option>
+                <option>Optional</option>
+                <option>Inactive</option>
+              </Select>
+            </Field>
+            <ModalActions>
+              <Btn $variant="secondary" onClick={() => setEditSingerForm(null)}>Cancel</Btn>
+              <Btn $variant="primary" onClick={handleSaveEditSinger} disabled={!editSingerForm.badgeName}>
+                Save
+              </Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
       {/* Add singer modal */}
       {singerForm && (
         <Overlay onClick={() => setSingerForm(null)}>
@@ -274,6 +364,14 @@ export default function AdminPage() {
               <Input
                 value={singerForm.lastName}
                 onChange={e => setSingerForm(f => f && ({ ...f, lastName: e.target.value }))}
+              />
+            </Field>
+            <Field>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={singerForm.email}
+                onChange={e => setSingerForm(f => f && ({ ...f, email: e.target.value }))}
               />
             </Field>
             <Field>

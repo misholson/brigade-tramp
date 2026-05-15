@@ -41,12 +41,25 @@ export const deleteEvent = createAsyncThunk(
 export const addSinger = createAsyncThunk(
   'admin/addSinger',
   async (
-    dto: { eventId: number; badgeName: string; firstName: string; lastName: string; part: string; status: string },
+    dto: { eventId: number; badgeName: string; firstName: string; lastName: string; part: string; email: string; status: string },
     { getState, dispatch }
   ) => {
     const { auth } = getState() as RootState;
     const { eventId, ...body } = dto;
     await createApiClient(auth.credentials).post(`/events/${eventId}/singers`, body);
+    dispatch(fetchEvents());
+  }
+);
+
+export const editSinger = createAsyncThunk(
+  'admin/editSinger',
+  async (
+    dto: { singerId: number; badgeName: string; firstName: string; lastName: string; part: string; email: string; status: string },
+    { getState, dispatch }
+  ) => {
+    const { auth } = getState() as RootState;
+    const { singerId, ...body } = dto;
+    await createApiClient(auth.credentials).put(`/singers/${singerId}`, body);
     dispatch(fetchEvents());
   }
 );

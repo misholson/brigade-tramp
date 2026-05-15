@@ -55,6 +55,7 @@ public static class ImportEndpoints
                         FirstName = row.FirstName,
                         LastName = row.LastName,
                         Part = part,
+                        Email = row.Email,
                         Status = status,
                         EventId = id,
                         Code = GenerateUniqueCode(existingCodes),

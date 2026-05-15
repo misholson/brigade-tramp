@@ -8,6 +8,7 @@ export interface SingerDto {
   lastName: string;
   part: Part;
   code: string;
+  email: string;
   status: SingerStatus;
 }
 

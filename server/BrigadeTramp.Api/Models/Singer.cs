@@ -10,5 +10,6 @@ public class Singer
     public int EventId { get; set; }
     public Event Event { get; set; } = null!;
     public string Code { get; set; } = "";
+    public string Email { get; set; } = "";
     public SingerStatus Status { get; set; } = SingerStatus.Active;
 }

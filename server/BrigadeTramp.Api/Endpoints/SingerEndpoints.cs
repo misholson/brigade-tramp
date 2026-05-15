@@ -60,6 +60,24 @@ public static class SingerEndpoints
             return Results.Ok();
         });
 
+        app.MapPut("/api/singers/{id:int}", async (int id, UpdateSingerDto dto, AppDbContext db) =>
+        {
+            var singer = await db.Singers.FindAsync(id);
+            if (singer is null) return Results.NotFound();
+            if (!Enum.TryParse<Part>(dto.Part, ignoreCase: true, out var part))
+                return Results.BadRequest("Invalid part. Use Tenor, Lead, Baritone, or Bass.");
+            if (!Enum.TryParse<SingerStatus>(dto.Status, ignoreCase: true, out var status))
+                return Results.BadRequest("Invalid status. Use Active, Inactive, or Optional.");
+            singer.BadgeName = dto.BadgeName;
+            singer.FirstName = dto.FirstName;
+            singer.LastName = dto.LastName;
+            singer.Part = part;
+            singer.Email = dto.Email;
+            singer.Status = status;
+            await db.SaveChangesAsync();
+            return Results.Ok(ToDto(singer));
+        }).RequireAuthorization();
+
         app.MapPatch("/api/singers/{id:int}/status", async (int id, UpdateSingerStatusDto dto, AppDbContext db) =>
         {
             var singer = await db.Singers.FindAsync(id);
@@ -73,5 +91,5 @@ public static class SingerEndpoints
     }
 
     public static SingerDto ToDto(Singer s) =>
-        new(s.Id, s.BadgeName, s.FirstName, s.LastName, s.Part.ToString(), s.Code, s.Status.ToString());
+        new(s.Id, s.BadgeName, s.FirstName, s.LastName, s.Part.ToString(), s.Code, s.Email, s.Status.ToString());
 }

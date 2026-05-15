@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { updateSingerStatus } from '../store/adminSlice';
-import type { EventWithSingersDto, SingerStatus } from '../types';
+import type { EventWithSingersDto, SingerDto, SingerStatus } from '../types';
 
 interface Props {
   event: EventWithSingersDto;
@@ -12,6 +12,7 @@ interface Props {
   onImport: (id: number) => void;
   onDownloadPdf: (id: number) => void;
   onAddSinger: (eventId: number) => void;
+  onEditSinger: (singer: SingerDto) => void;
 }
 
 const Card = styled.div`
@@ -138,7 +139,7 @@ const EmptyMsg = styled.span`
   font-size: 0.9rem;
 `;
 
-export default function EventCard({ event, onEdit, onDelete, onImport, onDownloadPdf, onAddSinger }: Props) {
+export default function EventCard({ event, onEdit, onDelete, onImport, onDownloadPdf, onAddSinger, onEditSinger }: Props) {
   const [expanded, setExpanded] = useState(false);
   const dispatch = useAppDispatch();
 
@@ -183,6 +184,7 @@ export default function EventCard({ event, onEdit, onDelete, onImport, onDownloa
                   <option value="Optional">Optional</option>
                   <option value="Inactive">Inactive</option>
                 </StatusSelect>
+                <Btn onClick={e => { e.stopPropagation(); onEditSinger(s); }}>Edit</Btn>
               </SingerRow>
             ))
           )}

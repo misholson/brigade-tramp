@@ -72,6 +72,7 @@ public static class EventEndpoints
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Part = part,
+                Email = dto.Email,
                 EventId = id,
                 Status = status,
                 Code = await GenerateUniqueCodeAsync(db),

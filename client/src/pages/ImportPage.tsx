@@ -137,13 +137,13 @@ export default function ImportPage() {
       <Section>
         <SectionTitle>Upload CSV file</SectionTitle>
         <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleFileChange} />
-        <Hint>Columns: BadgeName, FirstName, LastName, Part, Status (optional — Active/Optional/Inactive, defaults to Active)</Hint>
+        <Hint>Columns: BadgeName, FirstName, LastName, Part, Email (optional), Status (optional — Active/Optional/Inactive, defaults to Active)</Hint>
       </Section>
 
       <Section>
         <SectionTitle>Or paste CSV text</SectionTitle>
         <Textarea
-          placeholder={`BadgeName,FirstName,LastName,Part,Status\nBubba,John,Smith,Tenor,\nDoc,Bill,Jones,Lead,Optional`}
+          placeholder={`BadgeName,FirstName,LastName,Part,Email,Status\nBubba,John,Smith,Tenor,bubba@example.com,\nDoc,Bill,Jones,Lead,,Optional`}
           value={csvText}
           onChange={e => setCsvText(e.target.value)}
         />

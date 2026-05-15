@@ -41,11 +41,13 @@ using (var scope = app.Services.CreateScope())
         {
             "ALTER TABLE Singers ADD COLUMN Code TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE Singers ADD COLUMN Status TEXT NOT NULL DEFAULT 'Active'",
+            "ALTER TABLE Singers ADD COLUMN Email TEXT NOT NULL DEFAULT ''",
         }
         : new[]
         {
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='Code') ALTER TABLE Singers ADD Code NVARCHAR(10) NOT NULL DEFAULT ''",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='Status') ALTER TABLE Singers ADD Status NVARCHAR(10) NOT NULL DEFAULT 'Active'",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='Email') ALTER TABLE Singers ADD Email NVARCHAR(254) NOT NULL DEFAULT ''",
         };
 
     foreach (var sql in patches)
