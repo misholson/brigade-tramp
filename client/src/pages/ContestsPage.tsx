@@ -316,6 +316,7 @@ interface ContestQuartet {
   name: string;
   score: number | null;
   score2: number | null;
+  songTitle: string | null;
   singers: ContestSinger[];
 }
 
@@ -500,6 +501,7 @@ export default function ContestsPage() {
                 <Th $part="Lead">Lead</Th>
                 <Th $part="Baritone">Baritone</Th>
                 <Th $part="Bass">Bass</Th>
+                <Th>Song</Th>
                 <Th>Round 1 Score</Th>
                 <Th>Round 2 Score</Th>
               </tr>
@@ -521,6 +523,7 @@ export default function ContestsPage() {
                   <Td>{fmt(quartet, idx, 'Lead')}</Td>
                   <Td>{fmt(quartet, idx, 'Baritone')}</Td>
                   <Td>{fmt(quartet, idx, 'Bass')}</Td>
+                  <Td>{quartet.songTitle ?? '—'}</Td>
                   <Td>
                     <ScoreInput
                       type="number"
@@ -591,6 +594,12 @@ export default function ContestsPage() {
                   <MobileSingerName>{fmt(quartet, idx, part)}</MobileSingerName>
                 </MobileSingerRow>
               ))}
+              {quartet.songTitle && (
+                <MobileScoreRow style={{ marginTop: 6 }}>
+                  <MobileScoreLabel>Song:</MobileScoreLabel>
+                  <MobileSingerName>{quartet.songTitle}</MobileSingerName>
+                </MobileScoreRow>
+              )}
             </MobileQuartetCard>
           ))}
         </MobileOnly>

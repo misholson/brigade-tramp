@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Singer> Singers => Set<Singer>();
     public DbSet<SingerSungWith> SingerSungWiths => Set<SingerSungWith>();
+    public DbSet<Song> Songs => Set<Song>();
     public DbSet<Contest> Contests => Set<Contest>();
     public DbSet<ContestQuartet> ContestQuartets => Set<ContestQuartet>();
     public DbSet<ContestQuartetSinger> ContestQuartetSingers => Set<ContestQuartetSinger>();

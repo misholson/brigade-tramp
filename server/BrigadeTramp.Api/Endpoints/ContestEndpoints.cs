@@ -85,8 +85,23 @@ public static class ContestEndpoints
             db.ContestQuartets.AddRange(quartets);
             await db.SaveChangesAsync();
 
+            var songTitles = await db.Songs
+                .Where(s => s.EventId == contest.EventId)
+                .OrderBy(s => s.SortOrder)
+                .Select(s => s.Title)
+                .ToListAsync();
+
+            List<string> shuffled = [];
             for (int i = 0; i < quartets.Count; i++)
+            {
                 quartets[i].Name = $"Quartet {i + 1}";
+                if (songTitles.Count > 0)
+                {
+                    if (i % songTitles.Count == 0)
+                        shuffled = [.. songTitles.OrderBy(_ => Random.Shared.Next())];
+                    quartets[i].SongTitle = shuffled[i % songTitles.Count];
+                }
+            }
             await db.SaveChangesAsync();
 
             var assignments = byPart.SelectMany(kv =>
@@ -136,7 +151,7 @@ public static class ContestEndpoints
         c.Id, c.Name, c.EventId,
         c.Quartets
             .Select(q => new ContestQuartetDto(
-                q.Id, q.Name, q.Score, q.Score2,
+                q.Id, q.Name, q.Score, q.Score2, q.SongTitle,
                 q.SingerLinks
                     .Select(sl => new ContestSingerDto(
                         sl.Singer.Id, sl.Singer.BadgeName, sl.Singer.FirstName, sl.Singer.LastName, sl.Singer.Part.ToString()))

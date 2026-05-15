@@ -7,3 +7,4 @@ public record UpdateEventDto(string Name, DateOnly Date);
 public record AddSingerDto(string BadgeName, string FirstName, string LastName, string Part, string Email = "", string Status = "Active");
 public record UpdateSingerDto(string BadgeName, string FirstName, string LastName, string Part, string Email, string Status);
 public record UpdateSingerStatusDto(string Status);
+public record SetSongsDto(List<string> Titles);

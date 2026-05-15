@@ -70,6 +70,7 @@ Endpoints/
  ImportEndpoints.cs
  QrPdfEndpoints.cs
  SingerEndpoints.cs
+ SongEndpoints.cs
 Models/
  Contest.cs
  ContestQuartet.cs
@@ -79,6 +80,7 @@ Models/
  Singer.cs
  SingerStatus.cs
  SingerSungWith.cs
+ Song.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
  BrigadeTramp.Api.AssemblyInfo.cs

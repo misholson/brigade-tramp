@@ -105,6 +105,23 @@ const ModalActions = styled.div`
   margin-top: 16px;
 `;
 
+const Textarea = styled.textarea`
+  padding: 9px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 180px;
+  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+`;
+
+const Hint = styled.p`
+  font-size: 0.78rem;
+  color: #888;
+  margin: 4px 0 0;
+`;
+
 const StatusMsg = styled.div`
   text-align: center;
   padding: 40px;
@@ -138,6 +155,8 @@ export default function AdminPage() {
 
   const [singerForm, setSingerForm] = useState<SingerFormState | null>(null);
   const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number }) | null>(null);
+  const [songsModal, setSongsModal] = useState<{ eventId: number; text: string } | null>(null);
+  const [songsSaving, setSongsSaving] = useState(false);
 
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
@@ -202,6 +221,27 @@ export default function AdminPage() {
     });
   };
 
+  const openSongs = async (eventId: number) => {
+    const res = await fetch(`/api/events/${eventId}/songs`, {
+      headers: { Authorization: `Basic ${credentials ?? ''}` },
+    });
+    const titles: string[] = res.ok ? await res.json() : [];
+    setSongsModal({ eventId, text: titles.join('\n') });
+  };
+
+  const handleSaveSongs = async () => {
+    if (!songsModal) return;
+    setSongsSaving(true);
+    const titles = songsModal.text.split('\n').map(t => t.trim()).filter(Boolean);
+    await fetch(`/api/events/${songsModal.eventId}/songs`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Basic ${credentials ?? ''}` },
+      body: JSON.stringify({ titles }),
+    });
+    setSongsSaving(false);
+    setSongsModal(null);
+  };
+
   const handleSaveEditSinger = () => {
     if (!editSingerForm) return;
     dispatch(editSinger(editSingerForm));
@@ -236,6 +276,7 @@ export default function AdminPage() {
           onAddSinger={id => setSingerForm(emptySingerForm(id))}
           onEditSinger={openEditSinger}
           onContests={id => navigate(`/contests?eventId=${id}`)}
+          onSongs={openSongs}
         />
       ))}
 
@@ -334,6 +375,30 @@ export default function AdminPage() {
               <Btn $variant="secondary" onClick={() => setEditSingerForm(null)}>Cancel</Btn>
               <Btn $variant="primary" onClick={handleSaveEditSinger} disabled={!editSingerForm.badgeName}>
                 Save
+              </Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {/* Songs modal */}
+      {songsModal && (
+        <Overlay onClick={() => setSongsModal(null)}>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Songs</ModalTitle>
+            <Field>
+              <Label>Song list</Label>
+              <Textarea
+                autoFocus
+                value={songsModal.text}
+                onChange={e => setSongsModal(m => m && ({ ...m, text: e.target.value }))}
+              />
+              <Hint>One song title per line.</Hint>
+            </Field>
+            <ModalActions>
+              <Btn $variant="secondary" onClick={() => setSongsModal(null)}>Cancel</Btn>
+              <Btn $variant="primary" onClick={handleSaveSongs} disabled={songsSaving}>
+                {songsSaving ? 'Saving…' : 'Save'}
               </Btn>
             </ModalActions>
           </ModalBox>
