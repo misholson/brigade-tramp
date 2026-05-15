@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
@@ -7,6 +7,7 @@ import type { Part, SingerDto } from '../types';
 import PartGroup from '../components/PartGroup';
 import TrampBanner from '../components/TrampBanner';
 import HelpCard from '../components/HelpCard';
+import SongListCard from '../components/SongListCard';
 
 const PART_ORDER: Part[] = ['Tenor', 'Lead', 'Baritone', 'Bass'];
 
@@ -35,10 +36,19 @@ export default function MainPage() {
   const { code } = useParams<{ code: string }>();
   const dispatch = useAppDispatch();
   const { currentSinger, status } = useAppSelector(s => s.singer);
+  const [songs, setSongs] = useState<string[]>([]);
 
   useEffect(() => {
     if (code) dispatch(fetchSingerByCode(code));
   }, [code, dispatch]);
+
+  useEffect(() => {
+    if (!code) return;
+    fetch(`/api/singer/${code}/songs`)
+      .then(r => r.ok ? r.json() as Promise<string[]> : [])
+      .then(setSongs)
+      .catch(() => {});
+  }, [code]);
 
   if (status === 'loading' || (status === 'idle' && !currentSinger)) {
     return <CenteredMsg>Loading...</CenteredMsg>;
@@ -69,6 +79,7 @@ export default function MainPage() {
     <Container>
       <PageTitle>Hi, {singer.badgeName}!</PageTitle>
       <HelpCard />
+      <SongListCard songs={songs} />
       <TrampBanner isTramp={isTramp} isSuperTramp={isSuperTramp} />
       {grouped.map(({ part, singers }) => (
         <PartGroup

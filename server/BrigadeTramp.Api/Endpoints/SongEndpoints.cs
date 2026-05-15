@@ -9,6 +9,18 @@ public static class SongEndpoints
 {
     public static void MapSongEndpoints(this WebApplication app)
     {
+        app.MapGet("/api/singer/{code}/songs", async (string code, AppDbContext db) =>
+        {
+            var singer = await db.Singers.FirstOrDefaultAsync(s => s.Code == code);
+            if (singer is null) return Results.NotFound();
+            var songs = await db.Songs
+                .Where(s => s.EventId == singer.EventId)
+                .OrderBy(s => s.SortOrder)
+                .Select(s => s.Title)
+                .ToListAsync();
+            return Results.Ok(songs);
+        });
+
         app.MapGet("/api/events/{id:int}/songs", async (int id, AppDbContext db) =>
         {
             var songs = await db.Songs
