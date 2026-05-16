@@ -195,7 +195,7 @@ export default function AdminPage() {
   };
 
   const handleDownloadPdf = async (id: number) => {
-    const res = await fetch(`${BASE_URL}/events/${id}/qr-pdf`, {
+    const res = await fetch(`${BASE_URL}/events/${id}/qr-pdf?origin=${encodeURIComponent(window.location.origin)}`, {
       headers: { Authorization: `Basic ${credentials ?? ''}` },
     });
     if (!res.ok) { alert('Failed to generate PDF'); return; }

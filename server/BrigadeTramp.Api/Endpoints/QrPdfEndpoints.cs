@@ -10,7 +10,7 @@ public static class QrPdfEndpoints
 {
     public static void MapQrPdfEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/events/{id:int}/qr-pdf", async (int id, HttpRequest request, AppDbContext db, IConfiguration config) =>
+        app.MapGet("/api/events/{id:int}/qr-pdf", async (int id, string? origin, HttpRequest request, AppDbContext db, IConfiguration config) =>
         {
             var singers = await db.Singers
                 .Where(s => s.EventId == id)
@@ -19,7 +19,7 @@ public static class QrPdfEndpoints
 
             if (singers.Count == 0) return Results.NotFound();
 
-            var baseUrl = config["BaseUrl"] ?? $"{request.Scheme}://{request.Host}";
+            var baseUrl = origin ?? config["BaseUrl"] ?? $"{request.Scheme}://{request.Host}";
             var pdf = new PdfDocument();
             pdf.Info.Title = "Singer QR Codes";
 
