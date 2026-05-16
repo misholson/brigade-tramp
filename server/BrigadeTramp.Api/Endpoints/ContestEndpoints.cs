@@ -70,6 +70,11 @@ public static class ContestEndpoints
             var byPart = Enum.GetValues<Part>()
                 .ToDictionary(p => p, p => singers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList());
 
+            // Create a second shuffled list of singers to accomodate the second quartet if someone needs to be in more
+            // than one.
+            var byPart2 = Enum.GetValues<Part>()
+                .ToDictionary(p => p, p => singers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList());
+
             var missingParts = byPart.Where(kv => kv.Value.Count == 0).Select(kv => kv.Key.ToString()).ToList();
             if (missingParts.Count > 0)
                 return Results.BadRequest($"No singers for part(s): {string.Join(", ", missingParts)}.");
@@ -105,10 +110,19 @@ public static class ContestEndpoints
             await db.SaveChangesAsync();
 
             var assignments = byPart.SelectMany(kv =>
-                Enumerable.Range(0, numQuartets).Select(i => new ContestQuartetSinger
-                {
-                    QuartetId = quartets[i].Id,
-                    SingerId = kv.Value[i % kv.Value.Count].Id,
+                Enumerable.Range(0, numQuartets).Select(i => {
+                    List<Singer> partSingers = kv.Value;
+                    if (i >= partSingers.Count)
+                    {
+                        // If there are more quartets than singers in this part,
+                        // go to the second shuffled list of singers.
+                        partSingers = byPart2[kv.Key];
+                    }
+                    return new ContestQuartetSinger
+                    {
+                        QuartetId = quartets[i].Id,
+                        SingerId = partSingers[i % partSingers.Count].Id,
+                    };
                 }));
             db.ContestQuartetSingers.AddRange(assignments);
             await db.SaveChangesAsync();
