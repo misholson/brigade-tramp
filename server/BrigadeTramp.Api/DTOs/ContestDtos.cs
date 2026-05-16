@@ -10,3 +10,6 @@ public record UpdateContestDto(string Name);
 public record SetQuartetScoreDto(decimal? Score);
 public record SetQuartetScore2Dto(decimal? Score2);
 public record PrepareRound2Dto(int Count, bool AssignSongs);
+public record PublicQuartetSingerDto(string BadgeName, string LastName, string Part, string Email);
+public record PublicQuartetDto(string Name, List<PublicQuartetSingerDto> Singers);
+public record PublicContestDto(string Name, List<PublicQuartetDto> Quartets);

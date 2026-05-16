@@ -250,12 +250,36 @@ const Round2Section = styled.div`
 `;
 
 const Round2SectionHeader = styled.div`
-  padding: 8px 16px;
+  padding: 6px 10px 6px 16px;
   font-weight: 700;
   font-size: 0.88rem;
   color: #1565c0;
   background: #e3eaff;
   border-bottom: 1px solid #c5d3f5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const SectionToolbar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  padding: 5px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+`;
+
+const SmallBtn = styled.button`
+  padding: 3px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #757575;
+  color: #fff;
+  &:hover { opacity: 0.85; }
 `;
 
 const R1Score = styled.span`
@@ -380,6 +404,8 @@ export default function ContestsPage() {
   const [round2CountStr, setRound2CountStr] = useState('4');
   const [round2AssignSongs, setRound2AssignSongs] = useState(true);
   const [preparingRound2, setPreparingRound2] = useState(false);
+  const [r1ShuffledIds, setR1ShuffledIds] = useState<Record<number, number[]>>({});
+  const [r2ShuffledIds, setR2ShuffledIds] = useState<Record<number, number[]>>({});
 
   const authHeader = `Basic ${credentials ?? ''}`;
 
@@ -445,6 +471,10 @@ export default function ContestsPage() {
   };
 
   const handleGenerate = async (id: number) => {
+    const contest = contests.find(c => c.id === id);
+    if (contest && contest.quartets.length > 0) {
+      if (!window.confirm('This will delete all existing quartets and generate new ones. Continue?')) return;
+    }
     setGenerating(id);
     try {
       const res = await fetch(`/api/contests/${id}/generate`, {
@@ -456,6 +486,8 @@ export default function ContestsPage() {
         alert(text || 'Failed to generate quartets.');
         return;
       }
+      setR1ShuffledIds(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setR2ShuffledIds(prev => { const n = { ...prev }; delete n[id]; return n; });
       load();
     } finally {
       setGenerating(null);
@@ -520,12 +552,23 @@ export default function ContestsPage() {
   const renderRound2 = (contest: ContestData) => {
     if (!contest.round2Count) return null;
 
-    const top = [...contest.quartets]
+    const baseTop = [...contest.quartets]
       .filter(q => q.score != null)
       .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
       .slice(0, contest.round2Count);
 
-    if (top.length === 0) {
+    const handleR2Randomize = () => {
+      const ids = [...baseTop].sort(() => Math.random() - 0.5).map(q => q.id);
+      setR2ShuffledIds(prev => ({ ...prev, [contest.id]: ids }));
+    };
+
+    const top = r2ShuffledIds[contest.id]
+      ? r2ShuffledIds[contest.id]
+          .map(id => baseTop.find(q => q.id === id))
+          .filter((q): q is ContestQuartet => q !== undefined)
+      : baseTop;
+
+    if (baseTop.length === 0) {
       return (
         <Round2Section>
           <Round2SectionHeader>Round 2 — Top {contest.round2Count}</Round2SectionHeader>
@@ -552,7 +595,10 @@ export default function ContestsPage() {
 
     return (
       <Round2Section>
-        <Round2SectionHeader>Round 2 — Top {contest.round2Count}</Round2SectionHeader>
+        <Round2SectionHeader>
+          <span>Round 2 — Top {contest.round2Count}</span>
+          <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>
+        </Round2SectionHeader>
 
         <DesktopOnly>
           <QuartetTable>
@@ -654,9 +700,20 @@ export default function ContestsPage() {
       return <EmptyMsg>No quartets yet — click Generate Quartets.</EmptyMsg>;
     }
 
+    const orderedQuartets = r1ShuffledIds[contest.id]
+      ? r1ShuffledIds[contest.id]
+          .map(id => contest.quartets.find(q => q.id === id))
+          .filter((q): q is ContestQuartet => q !== undefined)
+      : contest.quartets;
+
+    const handleR1Randomize = () => {
+      const ids = [...contest.quartets].sort(() => Math.random() - 0.5).map(q => q.id);
+      setR1ShuffledIds(prev => ({ ...prev, [contest.id]: ids }));
+    };
+
     // Map singerId → ordered list of quartet indices they appear in
     const singerQuartetIndices: Record<number, number[]> = {};
-    contest.quartets.forEach((quartet, idx) => {
+    orderedQuartets.forEach((quartet, idx) => {
       quartet.singers.forEach(s => {
         (singerQuartetIndices[s.id] ??= []).push(idx);
       });
@@ -673,6 +730,9 @@ export default function ContestsPage() {
 
     return (
       <>
+        <SectionToolbar>
+          <SmallBtn onClick={handleR1Randomize}>Randomize Order</SmallBtn>
+        </SectionToolbar>
         {/* Desktop table */}
         <DesktopOnly>
           <QuartetTable>
@@ -686,11 +746,10 @@ export default function ContestsPage() {
                 <Th $part="Bass">Bass</Th>
                 <Th>Song</Th>
                 <Th>Round 1 Score</Th>
-                <Th>Round 2 Score</Th>
               </tr>
             </thead>
             <tbody>
-              {contest.quartets.map((quartet, idx) => (
+              {orderedQuartets.map((quartet, idx) => (
                 <tr key={quartet.id}>
                   <Td>{idx + 1}</Td>
                   <Td>
@@ -718,17 +777,6 @@ export default function ContestsPage() {
                       onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
                     />
                   </Td>
-                  <Td>
-                    <ScoreInput
-                      type="number"
-                      step="0.1"
-                      value={scores2[quartet.id] ?? ''}
-                      placeholder="—"
-                      onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
-                      onBlur={() => handleScore2Save(quartet.id)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
-                    />
-                  </Td>
                 </tr>
               ))}
             </tbody>
@@ -737,7 +785,7 @@ export default function ContestsPage() {
 
         {/* Mobile cards */}
         <MobileOnly>
-          {contest.quartets.map((quartet, idx) => (
+          {orderedQuartets.map((quartet, idx) => (
             <MobileQuartetCard key={quartet.id}>
               <MobileCardTop>
                 <MobileNum>#{idx + 1}</MobileNum>
@@ -759,16 +807,6 @@ export default function ContestsPage() {
                   onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
                   onBlur={() => handleScoreSave(quartet.id)}
                   onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
-                />
-                <MobileScoreLabel>Round 2:</MobileScoreLabel>
-                <MobileScoreInput
-                  type="number"
-                  step="0.1"
-                  value={scores2[quartet.id] ?? ''}
-                  placeholder="—"
-                  onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
-                  onBlur={() => handleScore2Save(quartet.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
                 />
               </MobileScoreRow>
               {PARTS.map(part => (

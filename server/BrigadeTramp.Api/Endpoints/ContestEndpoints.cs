@@ -189,6 +189,41 @@ public static class ContestEndpoints
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
+
+        app.MapGet("/api/singer/{code}/contests", async (string code, AppDbContext db) =>
+        {
+            var singer = await db.Singers.FirstOrDefaultAsync(s => s.Code == code);
+            if (singer is null) return Results.NotFound();
+
+            var contests = await db.Contests
+                .Where(c => c.EventId == singer.EventId)
+                .Include(c => c.Quartets)
+                    .ThenInclude(q => q.SingerLinks)
+                        .ThenInclude(sl => sl.Singer)
+                .OrderBy(c => c.Id)
+                .ToListAsync();
+
+            var result = contests
+                .Select(c => new PublicContestDto(
+                    c.Name,
+                    c.Quartets
+                        .Where(q => q.SingerLinks.Any(sl => sl.SingerId == singer.Id))
+                        .Select(q => new PublicQuartetDto(
+                            q.Name,
+                            q.SingerLinks
+                                .Select(sl => new PublicQuartetSingerDto(
+                                    sl.Singer.BadgeName,
+                                    sl.Singer.LastName,
+                                    sl.Singer.Part.ToString(),
+                                    sl.Singer.Email))
+                                .OrderBy(s => Array.IndexOf(PartOrder, s.Part))
+                                .ToList()))
+                        .ToList()))
+                .Where(c => c.Quartets.Count > 0)
+                .ToList();
+
+            return Results.Ok(result);
+        });
     }
 
     static ContestDto ToDto(Contest c) => new(
