@@ -2,10 +2,10 @@ import { useState } from 'react';
 import styled from 'styled-components';
 
 const Card = styled.div`
-  border: 1px solid #ddd;
+  border: 1px solid ${p => p.theme.colors.borderLight};
   border-radius: 8px;
   margin-bottom: 16px;
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   overflow: hidden;
 `;
 
@@ -16,13 +16,13 @@ const Header = styled.div`
   padding: 10px 14px;
   cursor: pointer;
   user-select: none;
-  background: #f5f5f5;
+  background: ${p => p.theme.colors.surfaceAlt};
 `;
 
 const HeaderTitle = styled.span`
   font-weight: 600;
   font-size: 0.95rem;
-  color: #444;
+  color: ${p => p.theme.colors.textSecondary};
 `;
 
 const HeaderRight = styled.div`
@@ -48,7 +48,7 @@ const Chevron = styled.span<{ $open: boolean }>`
   transition: transform 0.2s;
   display: inline-block;
   font-size: 0.75rem;
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
 `;
 
 const Body = styled.div`
@@ -58,8 +58,8 @@ const Body = styled.div`
 const SongItem = styled.div`
   padding: 5px 0;
   font-size: 0.9rem;
-  color: #333;
-  border-bottom: 1px solid #f0f0f0;
+  color: ${p => p.theme.colors.text};
+  border-bottom: 1px solid ${p => p.theme.colors.borderLight};
   &:last-child { border-bottom: none; }
 `;
 
@@ -74,7 +74,7 @@ const Overlay = styled.div`
 `;
 
 const ModalBox = styled.div`
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   border-radius: 12px;
   padding: 32px 28px;
   width: 320px;
@@ -88,14 +88,14 @@ const ModalLabel = styled.div`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
   margin-bottom: 16px;
 `;
 
 const SongName = styled.div`
   font-size: 1.4rem;
   font-weight: 700;
-  color: #1565c0;
+  color: ${p => p.theme.colors.link};
   margin-bottom: 24px;
   line-height: 1.3;
 `;

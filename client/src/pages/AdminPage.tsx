@@ -55,7 +55,7 @@ const Overlay = styled.div`
 `;
 
 const ModalBox = styled.div`
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   border-radius: 10px;
   padding: 28px;
   width: 400px;
@@ -78,24 +78,27 @@ const Field = styled.div`
 const Label = styled.label`
   font-size: 0.88rem;
   font-weight: 600;
-  color: #444;
+  color: ${p => p.theme.colors.textSecondary};
 `;
 
 const Input = styled.input`
   padding: 9px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 5px;
   font-size: 0.95rem;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const Select = styled.select`
   padding: 9px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 5px;
   font-size: 0.95rem;
-  background: #fff;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const ModalActions = styled.div`
@@ -107,25 +110,27 @@ const ModalActions = styled.div`
 
 const Textarea = styled.textarea`
   padding: 9px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 5px;
   font-size: 0.9rem;
   font-family: inherit;
   resize: vertical;
   min-height: 180px;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const Hint = styled.p`
   font-size: 0.78rem;
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
   margin: 4px 0 0;
 `;
 
 const StatusMsg = styled.div`
   text-align: center;
   padding: 40px;
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
 `;
 
 interface EventFormState { name: string; date: string; }

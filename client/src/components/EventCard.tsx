@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { updateSingerStatus } from '../store/adminSlice';
 import type { EventWithSingersDto, SingerDto, SingerStatus } from '../types';
+import type { Part } from '../types';
 
 interface Props {
   event: EventWithSingersDto;
@@ -18,11 +19,11 @@ interface Props {
 }
 
 const Card = styled.div`
-  border: 1px solid #e0e0e0;
+  border: 1px solid ${p => p.theme.colors.border};
   border-radius: 8px;
   margin-bottom: 12px;
   overflow: hidden;
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
 `;
 
 const CardHeader = styled.div`
@@ -30,7 +31,7 @@ const CardHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #f5f5f5;
+  background: ${p => p.theme.colors.surfaceAlt};
   cursor: pointer;
   gap: 12px;
 `;
@@ -43,11 +44,12 @@ const EventInfo = styled.div`
 const EventName = styled.div`
   font-weight: 700;
   font-size: 1rem;
+  color: ${p => p.theme.colors.text};
 `;
 
 const EventDate = styled.div`
   font-size: 0.8rem;
-  color: #666;
+  color: ${p => p.theme.colors.textMuted};
   margin-top: 2px;
 `;
 
@@ -95,21 +97,13 @@ const PartBadge = styled.span<{ $part: string }>`
   padding: 2px 7px;
   border-radius: 10px;
   flex-shrink: 0;
-  background: ${p => {
-    switch (p.$part) {
-      case 'Tenor': return '#F9A825';
-      case 'Lead': return '#1565C0';
-      case 'Baritone': return '#2E7D32';
-      case 'Bass': return '#C62828';
-      default: return '#888';
-    }
-  }};
+  background: ${p => p.theme.parts[p.$part as Part]?.dark ?? '#888'};
   color: #fff;
 `;
 
 const SingerLink = styled(Link)`
   font-size: 0.9rem;
-  color: #1565c0;
+  color: ${p => p.theme.colors.link};
   text-decoration: none;
   flex: 1;
   min-width: 0;
@@ -123,21 +117,15 @@ const StatusSelect = styled.select<{ $status: SingerStatus }>`
   font-size: 0.78rem;
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   cursor: pointer;
-  background: ${p =>
-    p.$status === 'Inactive' ? '#ffebee'
-    : p.$status === 'Optional' ? '#fff8e1'
-    : '#e8f5e9'};
-  color: ${p =>
-    p.$status === 'Inactive' ? '#c62828'
-    : p.$status === 'Optional' ? '#f57f17'
-    : '#2e7d32'};
+  background: ${p => p.theme.colors.statusColors[p.$status].bg};
+  color: ${p => p.theme.colors.statusColors[p.$status].text};
   font-weight: 600;
 `;
 
 const EmptyMsg = styled.span`
-  color: #999;
+  color: ${p => p.theme.colors.textMuted};
   font-size: 0.9rem;
 `;
 

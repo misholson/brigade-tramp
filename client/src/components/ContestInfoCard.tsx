@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import type { Part } from '../types';
 
 export interface PublicSinger {
   badgeName: string;
@@ -19,10 +20,10 @@ export interface PublicContest {
 }
 
 const Card = styled.div`
-  border: 1px solid #ddd;
+  border: 1px solid ${p => p.theme.colors.borderLight};
   border-radius: 8px;
   margin-bottom: 16px;
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   overflow: hidden;
 `;
 
@@ -33,13 +34,13 @@ const Header = styled.div`
   padding: 10px 14px;
   cursor: pointer;
   user-select: none;
-  background: #f5f5f5;
+  background: ${p => p.theme.colors.surfaceAlt};
 `;
 
 const HeaderTitle = styled.span`
   font-weight: 600;
   font-size: 0.95rem;
-  color: #444;
+  color: ${p => p.theme.colors.textSecondary};
 `;
 
 const Chevron = styled.span<{ $open: boolean }>`
@@ -47,7 +48,7 @@ const Chevron = styled.span<{ $open: boolean }>`
   transition: transform 0.2s;
   display: inline-block;
   font-size: 0.75rem;
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
 `;
 
 const Body = styled.div`
@@ -56,7 +57,7 @@ const Body = styled.div`
 
 const QuartetSection = styled.div`
   &:not(:last-child) {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid ${p => p.theme.colors.borderLight};
     margin-bottom: 10px;
     padding-bottom: 10px;
   }
@@ -65,7 +66,7 @@ const QuartetSection = styled.div`
 const QuartetName = styled.div`
   font-weight: 600;
   font-size: 0.88rem;
-  color: #555;
+  color: ${p => p.theme.colors.textSecondary};
   margin-bottom: 6px;
 `;
 
@@ -88,25 +89,17 @@ const PartDot = styled.span<{ $part: string }>`
   font-size: 0.68rem;
   font-weight: 700;
   color: #fff;
-  background: ${p => {
-    switch (p.$part) {
-      case 'Tenor':    return '#F9A825';
-      case 'Lead':     return '#1565C0';
-      case 'Baritone': return '#2E7D32';
-      case 'Bass':     return '#C62828';
-      default:         return '#888';
-    }
-  }};
+  background: ${p => p.theme.parts[p.$part as Part]?.dark ?? '#888'};
 `;
 
 const SingerName = styled.span`
   font-size: 0.88rem;
-  color: #333;
+  color: ${p => p.theme.colors.text};
 `;
 
 const EmailLink = styled.a`
   font-size: 0.82rem;
-  color: #1565c0;
+  color: ${p => p.theme.colors.link};
   text-decoration: none;
   &:hover { text-decoration: underline; }
 `;

@@ -20,7 +20,7 @@ const Card = styled.div<{ $part: Part; $selected: boolean; $isSelf: boolean }>`
     p.$selected || p.$isSelf
       ? p.theme.parts[p.$part].dark
       : p.theme.parts[p.$part].light};
-  color: ${p => (p.$selected || p.$isSelf ? '#fff' : '#222')};
+  color: ${p => (p.$selected || p.$isSelf ? '#fff' : p.theme.colors.cardUnselectedText)};
   transition: background-color 0.15s ease;
   display: flex;
   flex-direction: column;

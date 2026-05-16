@@ -15,17 +15,17 @@ const Title = styled.h1`
 `;
 
 const Section = styled.div`
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   border-radius: 8px;
   padding: 18px;
   margin-bottom: 14px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid ${p => p.theme.colors.border};
 `;
 
 const SectionTitle = styled.h2`
   font-size: 0.95rem;
   margin: 0 0 10px;
-  color: #444;
+  color: ${p => p.theme.colors.textSecondary};
   font-weight: 600;
 `;
 
@@ -33,16 +33,18 @@ const Textarea = styled.textarea`
   width: 100%;
   min-height: 150px;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 5px;
   font-family: monospace;
   font-size: 0.82rem;
   resize: vertical;
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
 `;
 
 const Hint = styled.p`
   font-size: 0.78rem;
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
   margin: 6px 0 0;
 `;
 
@@ -70,8 +72,8 @@ const StatusMsg = styled.div<{ $ok: boolean }>`
   border-radius: 6px;
   margin-top: 14px;
   font-size: 0.9rem;
-  background: ${p => p.$ok ? '#e8f5e9' : '#ffebee'};
-  color: ${p => p.$ok ? '#2e7d32' : '#c62828'};
+  background: ${p => p.$ok ? p.theme.colors.statusColors.Active.bg : p.theme.colors.statusColors.Inactive.bg};
+  color: ${p => p.$ok ? p.theme.colors.statusColors.Active.text : p.theme.colors.statusColors.Inactive.text};
 `;
 
 export default function ImportPage() {

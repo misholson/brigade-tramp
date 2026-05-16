@@ -30,7 +30,7 @@ const Title = styled.h1`
 
 const Sub = styled.div`
   font-size: 0.85rem;
-  color: #666;
+  color: ${p => p.theme.colors.textMuted};
   margin-top: 3px;
 `;
 
@@ -58,10 +58,10 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'secondary' }>`
 `;
 
 const ContestCard = styled.div`
-  border: 1px solid #e0e0e0;
+  border: 1px solid ${p => p.theme.colors.border};
   border-radius: 8px;
   margin-bottom: 14px;
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   overflow: hidden;
 `;
 
@@ -70,7 +70,7 @@ const ContestHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #f5f5f5;
+  background: ${p => p.theme.colors.surfaceAlt};
   gap: 12px;
   flex-wrap: wrap;
 `;
@@ -111,48 +111,47 @@ const Th = styled.th<{ $part?: string }>`
   text-align: left;
   font-size: 0.78rem;
   font-weight: 700;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid ${p => p.theme.colors.border};
   white-space: nowrap;
-  color: ${p => {
-    switch (p.$part) {
-      case 'Tenor':    return '#a07800';
-      case 'Lead':     return '#1565C0';
-      case 'Baritone': return '#2E7D32';
-      case 'Bass':     return '#C62828';
-      default:         return '#555';
-    }
-  }};
+  color: ${p => p.$part
+    ? (p.theme.parts[p.$part as 'Tenor' | 'Lead' | 'Baritone' | 'Bass']?.labelColor ?? p.theme.colors.textSecondary)
+    : p.theme.colors.textSecondary};
 `;
 
 const Td = styled.td`
   padding: 6px 10px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid ${p => p.theme.colors.borderLight};
   white-space: nowrap;
+  color: ${p => p.theme.colors.text};
 `;
 
 const NameInput = styled.input`
   width: 120px;
   padding: 3px 6px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 4px;
   font-size: 0.85rem;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const ScoreInput = styled.input`
   width: 72px;
   padding: 3px 6px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 4px;
   font-size: 0.85rem;
   text-align: right;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 /* ── Mobile cards ── */
 
 const MobileQuartetCard = styled.div`
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid ${p => p.theme.colors.border};
   padding: 10px 14px;
 `;
 
@@ -166,18 +165,21 @@ const MobileCardTop = styled.div`
 const MobileNum = styled.span`
   font-size: 0.78rem;
   font-weight: 700;
-  color: #777;
+  color: ${p => p.theme.colors.textMuted};
   flex-shrink: 0;
 `;
 
-const MobileNameInput = styled.input`
+const MobileNameInput = styled.input<{ $readOnly?: boolean }>`
   flex: 1;
   min-width: 0;
   padding: 4px 8px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 4px;
   font-size: 0.88rem;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.$readOnly ? p.theme.colors.surfaceAlt : p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  cursor: ${p => p.$readOnly ? 'default' : 'text'};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const MobileScoreRow = styled.div`
@@ -189,17 +191,19 @@ const MobileScoreRow = styled.div`
 
 const MobileScoreLabel = styled.span`
   font-size: 0.82rem;
-  color: #666;
+  color: ${p => p.theme.colors.textMuted};
 `;
 
 const MobileScoreInput = styled.input`
   width: 80px;
   padding: 4px 8px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 4px;
   font-size: 0.88rem;
   text-align: right;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const MobileSingerRow = styled.div`
@@ -220,15 +224,7 @@ const PartDot = styled.span<{ $part: string }>`
   font-size: 0.68rem;
   font-weight: 700;
   color: #fff;
-  background: ${p => {
-    switch (p.$part) {
-      case 'Tenor':    return '#F9A825';
-      case 'Lead':     return '#1565C0';
-      case 'Baritone': return '#2E7D32';
-      case 'Bass':     return '#C62828';
-      default:         return '#888';
-    }
-  }};
+  background: ${p => p.theme.parts[p.$part as 'Tenor' | 'Lead' | 'Baritone' | 'Bass']?.dark ?? '#888'};
 `;
 
 const MobileSingerName = styled.span`
@@ -241,21 +237,21 @@ const CheckRow = styled.div`
   gap: 8px;
   margin-bottom: 14px;
   font-size: 0.9rem;
-  color: #333;
+  color: ${p => p.theme.colors.text};
 `;
 
 const Round2Section = styled.div`
-  border-top: 2px solid #1565c0;
-  background: #f5f8ff;
+  border-top: 2px solid ${p => p.theme.colors.link};
+  background: ${p => p.theme.colors.accentSurface};
 `;
 
 const Round2SectionHeader = styled.div`
   padding: 6px 10px 6px 16px;
   font-weight: 700;
   font-size: 0.88rem;
-  color: #1565c0;
-  background: #e3eaff;
-  border-bottom: 1px solid #c5d3f5;
+  color: ${p => p.theme.colors.link};
+  background: ${p => p.theme.colors.accentHeader};
+  border-bottom: 1px solid ${p => p.theme.colors.accentBorder};
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -266,8 +262,8 @@ const SectionToolbar = styled.div`
   justify-content: flex-end;
   gap: 6px;
   padding: 5px 10px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-bottom: 1px solid ${p => p.theme.colors.borderLight};
+  background: ${p => p.theme.colors.surfaceHover};
 `;
 
 const SmallBtn = styled.button`
@@ -284,7 +280,7 @@ const SmallBtn = styled.button`
 `;
 
 const R1Score = styled.span`
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
   font-size: 0.82rem;
 `;
 
@@ -293,13 +289,13 @@ const R1Score = styled.span`
 const EmptyMsg = styled.div`
   padding: 12px 16px;
   font-size: 0.88rem;
-  color: #999;
+  color: ${p => p.theme.colors.textMuted};
 `;
 
 const Msg = styled.div<{ $err?: boolean }>`
   padding: 20px;
   text-align: center;
-  color: ${p => p.$err ? '#c62828' : '#888'};
+  color: ${p => p.$err ? '#c62828' : p.theme.colors.textMuted};
 `;
 
 const Overlay = styled.div`
@@ -313,7 +309,7 @@ const Overlay = styled.div`
 `;
 
 const ModalBox = styled.div`
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   border-radius: 10px;
   padding: 28px;
   width: 380px;
@@ -327,29 +323,31 @@ const WideModalBox = styled(ModalBox)`
 
 const Textarea = styled.textarea`
   padding: 9px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 5px;
   font-size: 0.85rem;
   font-family: inherit;
   resize: vertical;
   min-height: 150px;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const HelpCard = styled.div`
-  background: #f5f8ff;
-  border: 1px solid #c5d3f5;
+  background: ${p => p.theme.colors.accentSurface};
+  border: 1px solid ${p => p.theme.colors.accentBorder};
   border-radius: 6px;
   padding: 10px 12px;
   font-size: 0.78rem;
-  color: #444;
+  color: ${p => p.theme.colors.textSecondary};
   margin-bottom: 14px;
 `;
 
 const HelpTitle = styled.div`
   font-weight: 700;
   margin-bottom: 6px;
-  color: #1565c0;
+  color: ${p => p.theme.colors.link};
 `;
 
 const HelpGrid = styled.div`
@@ -359,7 +357,7 @@ const HelpGrid = styled.div`
 `;
 
 const HelpToken = styled.code`
-  color: #1565c0;
+  color: ${p => p.theme.colors.link};
   font-size: 0.75rem;
   white-space: nowrap;
 `;
@@ -395,15 +393,17 @@ const Field = styled.div`
 const Label = styled.label`
   font-size: 0.88rem;
   font-weight: 600;
-  color: #444;
+  color: ${p => p.theme.colors.textSecondary};
 `;
 
 const Input = styled.input`
   padding: 9px;
-  border: 1px solid #ccc;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 5px;
   font-size: 0.95rem;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const ModalActions = styled.div`
@@ -756,7 +756,7 @@ export default function ContestsPage() {
                 <MobileNameInput
                   value={names[quartet.id] ?? quartet.name}
                   readOnly
-                  style={{ background: '#f5f5f5', cursor: 'default' }}
+                  $readOnly
                 />
               </MobileCardTop>
               <MobileScoreRow>

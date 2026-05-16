@@ -8,7 +8,7 @@ const Container = styled.div`
   max-width: 360px;
   margin: 80px auto;
   padding: 32px;
-  background: #fff;
+  background: ${p => p.theme.colors.surface};
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 `;
@@ -17,7 +17,7 @@ const Title = styled.h1`
   font-size: 1.5rem;
   margin: 0 0 24px;
   text-align: center;
-  color: #222;
+  color: ${p => p.theme.colors.text};
 `;
 
 const Field = styled.div`
@@ -30,15 +30,17 @@ const Field = styled.div`
 const Label = styled.label`
   font-size: 0.9rem;
   font-weight: 600;
-  color: #444;
+  color: ${p => p.theme.colors.textSecondary};
 `;
 
 const Input = styled.input`
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 6px;
   font-size: 1rem;
-  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
 `;
 
 const SubmitBtn = styled.button`

@@ -22,14 +22,14 @@ const PageTitle = styled.h1`
   font-size: 1.2rem;
   margin: 0 0 16px;
   text-align: center;
-  color: #333;
+  color: ${p => p.theme.colors.text};
   font-weight: 600;
 `;
 
 const CenteredMsg = styled.div`
   text-align: center;
   padding: 60px 20px;
-  color: #888;
+  color: ${p => p.theme.colors.textMuted};
   font-size: 1rem;
 `;
 
