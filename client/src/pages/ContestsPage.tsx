@@ -443,13 +443,13 @@ interface ContestData {
 
 const PARTS = ['Tenor', 'Lead', 'Baritone', 'Bass'];
 
-const DEFAULT_EMAIL_SUBJECT = '{{event}} {{contest}} Quartet Assignment';
+const DEFAULT_EMAIL_SUBJECT = '{{event}} {{contest}} Quartet Assignment: {{quartet}}';
 const DEFAULT_EMAIL_BODY = `Your quartet assignment for the {{contest}} at {{event}} is below. If you are assigned to two quartets you may receive two e-mails, please watch your e-mail for this possibility:
 
-{{tenor}} - {{tenorEmail}}
-{{lead}} - {{leadEmail}}
-{{baritone}} - {{baritoneEmail}}
-{{bass}} - {{bassEmail}}`;
+Tenor: {{tenor}} - {{tenorEmail}}
+Lead: {{lead}} - {{leadEmail}}
+Baritone: {{baritone}} - {{baritoneEmail}}
+Bass: {{bass}} - {{bassEmail}}`;
 
 export default function ContestsPage() {
   const [searchParams] = useSearchParams();

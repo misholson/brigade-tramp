@@ -236,12 +236,11 @@ public static class ContestEndpoints
                     .Replace("{{bass}}", singersByPart.TryGetValue(Part.Bass, out var bs) ? $"{bs.BadgeName} {bs.LastName}" : "")
                     .Replace("{{bassEmail}}", singersByPart.TryGetValue(Part.Bass, out var bse) ? bse.Email : "");
 
-                foreach (var link in quartet.SingerLinks)
-                {
-                    var singer = link.Singer;
-                    if (string.IsNullOrWhiteSpace(singer.Email)) continue;
-                    await emailService.SendAsync(singer.Email, Interpolate(dto.Subject), Interpolate(dto.Body));
-                }
+                var addresses = quartet.SingerLinks
+                    .Select(sl => sl.Singer.Email)
+                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                    .ToList();
+                await emailService.SendAsync(addresses, Interpolate(dto.Subject), Interpolate(dto.Body));
             }
 
             return Results.Ok();
