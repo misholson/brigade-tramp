@@ -9,5 +9,6 @@ public class ContestQuartet
     public decimal? Score { get; set; }
     public decimal? Score2 { get; set; }
     public string? SongTitle { get; set; }
+    public string? Song2Title { get; set; }
     public List<ContestQuartetSinger> SingerLinks { get; set; } = [];
 }

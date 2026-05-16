@@ -145,13 +145,57 @@ public static class ContestEndpoints
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
+
+        app.MapPost("/api/contests/{id:int}/prepare-round2", async (int id, PrepareRound2Dto dto, AppDbContext db) =>
+        {
+            var contest = await db.Contests
+                .Include(c => c.Quartets)
+                .FirstOrDefaultAsync(c => c.Id == id);
+            if (contest is null) return Results.NotFound();
+
+            contest.Round2Count = dto.Count;
+
+            if (dto.AssignSongs)
+            {
+                var songTitles = await db.Songs
+                    .Where(s => s.EventId == contest.EventId)
+                    .OrderBy(s => s.SortOrder)
+                    .Select(s => s.Title)
+                    .ToListAsync();
+
+                var topQuartets = contest.Quartets
+                    .Where(q => q.Score.HasValue)
+                    .OrderByDescending(q => q.Score)
+                    .Take(dto.Count)
+                    .ToList();
+
+                if (songTitles.Count > 0)
+                {
+                    List<string> shuffled = [];
+                    for (int i = 0; i < topQuartets.Count; i++)
+                    {
+                        if (i % songTitles.Count == 0)
+                            shuffled = [.. songTitles.OrderBy(_ => Random.Shared.Next())];
+                        topQuartets[i].Song2Title = shuffled[i % songTitles.Count];
+                    }
+                }
+            }
+            else
+            {
+                foreach (var q in contest.Quartets)
+                    q.Song2Title = null;
+            }
+
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
     }
 
     static ContestDto ToDto(Contest c) => new(
-        c.Id, c.Name, c.EventId,
+        c.Id, c.Name, c.EventId, c.Round2Count,
         c.Quartets
             .Select(q => new ContestQuartetDto(
-                q.Id, q.Name, q.Score, q.Score2, q.SongTitle,
+                q.Id, q.Name, q.Score, q.Score2, q.SongTitle, q.Song2Title,
                 q.SingerLinks
                     .Select(sl => new ContestSingerDto(
                         sl.Singer.Id, sl.Singer.BadgeName, sl.Singer.FirstName, sl.Singer.LastName, sl.Singer.Part.ToString()))

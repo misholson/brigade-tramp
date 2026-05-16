@@ -7,4 +7,5 @@ public class Contest
     public int EventId { get; set; }
     public Event Event { get; set; } = null!;
     public List<ContestQuartet> Quartets { get; set; } = [];
+    public int? Round2Count { get; set; }
 }

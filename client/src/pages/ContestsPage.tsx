@@ -235,6 +235,34 @@ const MobileSingerName = styled.span`
   font-size: 0.88rem;
 `;
 
+const CheckRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  color: #333;
+`;
+
+const Round2Section = styled.div`
+  border-top: 2px solid #1565c0;
+  background: #f5f8ff;
+`;
+
+const Round2SectionHeader = styled.div`
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #1565c0;
+  background: #e3eaff;
+  border-bottom: 1px solid #c5d3f5;
+`;
+
+const R1Score = styled.span`
+  color: #888;
+  font-size: 0.82rem;
+`;
+
 /* ── Misc ── */
 
 const EmptyMsg = styled.div`
@@ -317,6 +345,7 @@ interface ContestQuartet {
   score: number | null;
   score2: number | null;
   songTitle: string | null;
+  song2Title: string | null;
   singers: ContestSinger[];
 }
 
@@ -324,6 +353,7 @@ interface ContestData {
   id: number;
   name: string;
   eventId: number;
+  round2Count: number | null;
   quartets: ContestQuartet[];
 }
 
@@ -346,6 +376,10 @@ export default function ContestsPage() {
   const [scores2, setScores2] = useState<Record<number, string>>({});
   const [names, setNames] = useState<Record<number, string>>({});
   const [generating, setGenerating] = useState<number | null>(null);
+  const [round2Modal, setRound2Modal] = useState<number | null>(null);
+  const [round2CountStr, setRound2CountStr] = useState('4');
+  const [round2AssignSongs, setRound2AssignSongs] = useState(true);
+  const [preparingRound2, setPreparingRound2] = useState(false);
 
   const authHeader = `Basic ${credentials ?? ''}`;
 
@@ -456,6 +490,155 @@ export default function ContestsPage() {
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify({ score2 }),
     });
+  };
+
+  const openRound2Modal = (contest: ContestData) => {
+    setRound2CountStr(String(contest.round2Count ?? 4));
+    setRound2AssignSongs(true);
+    setRound2Modal(contest.id);
+  };
+
+  const handlePrepareRound2 = async () => {
+    if (round2Modal === null) return;
+    const count = parseInt(round2CountStr, 10);
+    if (isNaN(count) || count < 1) return;
+    setPreparingRound2(true);
+    try {
+      const res = await fetch(`/api/contests/${round2Modal}/prepare-round2`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ count, assignSongs: round2AssignSongs }),
+      });
+      if (!res.ok) { alert('Failed to prepare Round 2.'); return; }
+      setRound2Modal(null);
+      load();
+    } finally {
+      setPreparingRound2(false);
+    }
+  };
+
+  const renderRound2 = (contest: ContestData) => {
+    if (!contest.round2Count) return null;
+
+    const top = [...contest.quartets]
+      .filter(q => q.score != null)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      .slice(0, contest.round2Count);
+
+    if (top.length === 0) {
+      return (
+        <Round2Section>
+          <Round2SectionHeader>Round 2 — Top {contest.round2Count}</Round2SectionHeader>
+          <EmptyMsg>Enter Round 1 scores to see which quartets advance.</EmptyMsg>
+        </Round2Section>
+      );
+    }
+
+    const singerR2Indices: Record<number, number[]> = {};
+    top.forEach((quartet, idx) => {
+      quartet.singers.forEach(s => {
+        (singerR2Indices[s.id] ??= []).push(idx);
+      });
+    });
+
+    const fmtR2 = (quartet: ContestQuartet, quartetIdx: number, part: string) => {
+      const s = quartet.singers.find(s => s.part === part);
+      if (!s) return '—';
+      const name = `${s.badgeName} ${s.lastName}`;
+      const indices = singerR2Indices[s.id];
+      if (indices.length < 2) return name;
+      return `${name} (${indices.indexOf(quartetIdx) + 1})`;
+    };
+
+    return (
+      <Round2Section>
+        <Round2SectionHeader>Round 2 — Top {contest.round2Count}</Round2SectionHeader>
+
+        <DesktopOnly>
+          <QuartetTable>
+            <thead>
+              <tr>
+                <Th>Rank</Th>
+                <Th>Name</Th>
+                <Th $part="Tenor">Tenor</Th>
+                <Th $part="Lead">Lead</Th>
+                <Th $part="Baritone">Baritone</Th>
+                <Th $part="Bass">Bass</Th>
+                <Th>Song</Th>
+                <Th>R1 Score</Th>
+                <Th>Round 2 Score</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {top.map((quartet, idx) => (
+                <tr key={quartet.id}>
+                  <Td>{idx + 1}</Td>
+                  <Td>{names[quartet.id] ?? quartet.name}</Td>
+                  <Td>{fmtR2(quartet, idx, 'Tenor')}</Td>
+                  <Td>{fmtR2(quartet, idx, 'Lead')}</Td>
+                  <Td>{fmtR2(quartet, idx, 'Baritone')}</Td>
+                  <Td>{fmtR2(quartet, idx, 'Bass')}</Td>
+                  <Td>{quartet.song2Title ?? '—'}</Td>
+                  <Td><R1Score>{quartet.score}</R1Score></Td>
+                  <Td>
+                    <ScoreInput
+                      type="number"
+                      step="0.1"
+                      value={scores2[quartet.id] ?? ''}
+                      placeholder="—"
+                      onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                      onBlur={() => handleScore2Save(quartet.id)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
+                    />
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </QuartetTable>
+        </DesktopOnly>
+
+        <MobileOnly>
+          {top.map((quartet, idx) => (
+            <MobileQuartetCard key={quartet.id}>
+              <MobileCardTop>
+                <MobileNum>#{idx + 1}</MobileNum>
+                <MobileNameInput
+                  value={names[quartet.id] ?? quartet.name}
+                  readOnly
+                  style={{ background: '#f5f5f5', cursor: 'default' }}
+                />
+              </MobileCardTop>
+              <MobileScoreRow>
+                <MobileScoreLabel>R1:</MobileScoreLabel>
+                <R1Score>{quartet.score}</R1Score>
+                <MobileScoreLabel>R2:</MobileScoreLabel>
+                <MobileScoreInput
+                  type="number"
+                  step="0.1"
+                  value={scores2[quartet.id] ?? ''}
+                  placeholder="—"
+                  onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                  onBlur={() => handleScore2Save(quartet.id)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
+                />
+              </MobileScoreRow>
+              {PARTS.map(part => (
+                <MobileSingerRow key={part}>
+                  <PartDot $part={part}>{part[0]}</PartDot>
+                  <MobileSingerName>{fmtR2(quartet, idx, part)}</MobileSingerName>
+                </MobileSingerRow>
+              ))}
+              {quartet.song2Title && (
+                <MobileScoreRow style={{ marginTop: 6 }}>
+                  <MobileScoreLabel>Song:</MobileScoreLabel>
+                  <MobileSingerName>{quartet.song2Title}</MobileSingerName>
+                </MobileScoreRow>
+              )}
+            </MobileQuartetCard>
+          ))}
+        </MobileOnly>
+      </Round2Section>
+    );
   };
 
   if (!eventId) {
@@ -639,10 +822,17 @@ export default function ContestsPage() {
               >
                 {generating === contest.id ? 'Generating…' : 'Generate Quartets'}
               </Btn>
+              <Btn
+                disabled={contest.quartets.length === 0}
+                onClick={() => openRound2Modal(contest)}
+              >
+                Prepare Round 2
+              </Btn>
               <Btn $variant="danger" onClick={() => handleDelete(contest.id)}>Delete</Btn>
             </ContestActions>
           </ContestHeader>
           {renderQuartets(contest)}
+          {renderRound2(contest)}
         </ContestCard>
       ))}
 
@@ -683,6 +873,44 @@ export default function ContestsPage() {
             <ModalActions>
               <Btn onClick={() => setEditingName(null)}>Cancel</Btn>
               <Btn $variant="primary" disabled={!editingName.name.trim()} onClick={handleRename}>Save</Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {round2Modal !== null && (
+        <Overlay onClick={() => setRound2Modal(null)}>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Prepare Round 2</ModalTitle>
+            <Field>
+              <Label>Quartets advancing</Label>
+              <Input
+                autoFocus
+                type="number"
+                min={1}
+                value={round2CountStr}
+                onChange={e => setRound2CountStr(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handlePrepareRound2(); }}
+              />
+            </Field>
+            <CheckRow>
+              <input
+                id="r2-songs"
+                type="checkbox"
+                checked={round2AssignSongs}
+                onChange={e => setRound2AssignSongs(e.target.checked)}
+              />
+              <label htmlFor="r2-songs">Assign songs to advancing quartets</label>
+            </CheckRow>
+            <ModalActions>
+              <Btn onClick={() => setRound2Modal(null)}>Cancel</Btn>
+              <Btn
+                $variant="primary"
+                disabled={preparingRound2 || !round2CountStr || parseInt(round2CountStr, 10) < 1}
+                onClick={handlePrepareRound2}
+              >
+                {preparingRound2 ? 'Preparing…' : 'Prepare'}
+              </Btn>
             </ModalActions>
           </ModalBox>
         </Overlay>
