@@ -1,6 +1,7 @@
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.DTOs;
 using BrigadeTramp.Api.Models;
+using BrigadeTramp.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace BrigadeTramp.Api.Endpoints;
@@ -201,6 +202,48 @@ public static class ContestEndpoints
             }
 
             await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
+
+        app.MapPost("/api/contests/{id:int}/send-emails", async (int id, SendEmailsDto dto, AppDbContext db, EmailService emailService) =>
+        {
+            var contest = await db.Contests
+                .Include(c => c.Quartets)
+                    .ThenInclude(q => q.SingerLinks)
+                        .ThenInclude(sl => sl.Singer)
+                .FirstOrDefaultAsync(c => c.Id == id);
+            if (contest is null) return Results.NotFound();
+
+            var ev = await db.Events.FindAsync(contest.EventId);
+            if (ev is null) return Results.NotFound();
+
+            foreach (var quartet in contest.Quartets)
+            {
+                var singersByPart = quartet.SingerLinks
+                    .GroupBy(sl => sl.Singer.Part)
+                    .ToDictionary(g => g.Key, g => g.First().Singer);
+
+                string Interpolate(string template) => template
+                    .Replace("{{event}}", ev.Name)
+                    .Replace("{{contest}}", contest.Name)
+                    .Replace("{{quartet}}", quartet.Name)
+                    .Replace("{{tenor}}", singersByPart.TryGetValue(Part.Tenor, out var t) ? $"{t.BadgeName} {t.LastName}" : "")
+                    .Replace("{{tenorEmail}}", singersByPart.TryGetValue(Part.Tenor, out var te) ? te.Email : "")
+                    .Replace("{{lead}}", singersByPart.TryGetValue(Part.Lead, out var l) ? $"{l.BadgeName} {l.LastName}" : "")
+                    .Replace("{{leadEmail}}", singersByPart.TryGetValue(Part.Lead, out var le) ? le.Email : "")
+                    .Replace("{{baritone}}", singersByPart.TryGetValue(Part.Baritone, out var b) ? $"{b.BadgeName} {b.LastName}" : "")
+                    .Replace("{{baritoneEmail}}", singersByPart.TryGetValue(Part.Baritone, out var be) ? be.Email : "")
+                    .Replace("{{bass}}", singersByPart.TryGetValue(Part.Bass, out var bs) ? $"{bs.BadgeName} {bs.LastName}" : "")
+                    .Replace("{{bassEmail}}", singersByPart.TryGetValue(Part.Bass, out var bse) ? bse.Email : "");
+
+                foreach (var link in quartet.SingerLinks)
+                {
+                    var singer = link.Singer;
+                    if (string.IsNullOrWhiteSpace(singer.Email)) continue;
+                    await emailService.SendAsync(singer.Email, Interpolate(dto.Subject), Interpolate(dto.Body));
+                }
+            }
+
             return Results.Ok();
         }).RequireAuthorization();
 

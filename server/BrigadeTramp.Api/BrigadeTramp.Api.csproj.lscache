@@ -86,6 +86,7 @@ obj/Debug/net10.0/
  BrigadeTramp.Api.AssemblyInfo.cs
  BrigadeTramp.Api.GlobalUsings.g.cs
 Program.cs
+Services/EmailService.cs
 
 [metadataReferences]
 <DOTNET>/packs/Microsoft.AspNetCore.App.Ref/10.0.2/ref/net10.0/
@@ -398,6 +399,7 @@ Program.cs
  System.Xml.XPath.XDocument.dll
  WindowsBase.dll
 <NUGET>/
+ azure.communication.email/1.0.1/lib/netstandard2.0/Azure.Communication.Email.dll
  azure.core/1.47.1/lib/net8.0/Azure.Core.dll
  azure.identity/1.14.2/lib/net8.0/Azure.Identity.dll
  csvhelper/33.1.0/lib/net9.0/CsvHelper.dll

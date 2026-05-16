@@ -1,6 +1,7 @@
 using BrigadeTramp.Api.Auth;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.Endpoints;
+using BrigadeTramp.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -19,6 +20,8 @@ builder.Services.AddDbContext<AppDbContext>(opts =>
 builder.Services.AddAuthentication("BasicAuth")
     .AddScheme<BasicAuthOptions, BasicAuthHandler>("BasicAuth", null);
 builder.Services.AddAuthorization();
+
+builder.Services.AddSingleton<EmailService>();
 
 builder.Services.AddOpenApi();
 

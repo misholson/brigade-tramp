@@ -264,6 +264,7 @@ const Round2SectionHeader = styled.div`
 const SectionToolbar = styled.div`
   display: flex;
   justify-content: flex-end;
+  gap: 6px;
   padding: 5px 10px;
   border-bottom: 1px solid #f0f0f0;
   background: #fafafa;
@@ -318,6 +319,65 @@ const ModalBox = styled.div`
   width: 380px;
   max-width: 95vw;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+`;
+
+const WideModalBox = styled(ModalBox)`
+  width: 520px;
+`;
+
+const Textarea = styled.textarea`
+  padding: 9px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 150px;
+  &:focus { outline: 2px solid #1565c0; border-color: transparent; }
+`;
+
+const HelpCard = styled.div`
+  background: #f5f8ff;
+  border: 1px solid #c5d3f5;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  color: #444;
+  margin-bottom: 14px;
+`;
+
+const HelpTitle = styled.div`
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #1565c0;
+`;
+
+const HelpGrid = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+`;
+
+const HelpToken = styled.code`
+  color: #1565c0;
+  font-size: 0.75rem;
+  white-space: nowrap;
+`;
+
+const Toast = styled.div`
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2e7d32;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  white-space: nowrap;
 `;
 
 const ModalTitle = styled.h2`
@@ -383,6 +443,14 @@ interface ContestData {
 
 const PARTS = ['Tenor', 'Lead', 'Baritone', 'Bass'];
 
+const DEFAULT_EMAIL_SUBJECT = '{{event}} {{contest}} Quartet Assignment';
+const DEFAULT_EMAIL_BODY = `Your quartet assignment for the {{contest}} at {{event}} is below. If you are assigned to two quartets you may receive two e-mails, please watch your e-mail for this possibility:
+
+{{tenor}} - {{tenorEmail}}
+{{lead}} - {{leadEmail}}
+{{baritone}} - {{baritoneEmail}}
+{{bass}} - {{bassEmail}}`;
+
 export default function ContestsPage() {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get('eventId');
@@ -406,8 +474,45 @@ export default function ContestsPage() {
   const [preparingRound2, setPreparingRound2] = useState(false);
   const [r1ShuffledIds, setR1ShuffledIds] = useState<Record<number, number[]>>({});
   const [r2ShuffledIds, setR2ShuffledIds] = useState<Record<number, number[]>>({});
+  const [emailModal, setEmailModal] = useState<number | null>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sendingEmails, setSendingEmails] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const authHeader = `Basic ${credentials ?? ''}`;
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const openEmailModal = (contestId: number) => {
+    setEmailSubject(DEFAULT_EMAIL_SUBJECT);
+    setEmailBody(DEFAULT_EMAIL_BODY);
+    setEmailModal(contestId);
+  };
+
+  const handleSendEmails = async () => {
+    if (emailModal === null) return;
+    setSendingEmails(true);
+    try {
+      const res = await fetch(`/api/contests/${emailModal}/send-emails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ subject: emailSubject, body: emailBody }),
+      });
+      if (!res.ok) {
+        alert('Failed to send emails. Check that ACS is configured on the server.');
+        return;
+      }
+      setEmailModal(null);
+      setToast('Emails have been scheduled successfully.');
+    } finally {
+      setSendingEmails(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -731,6 +836,7 @@ export default function ContestsPage() {
     return (
       <>
         <SectionToolbar>
+          <SmallBtn onClick={() => openEmailModal(contest.id)}>Email Quartets</SmallBtn>
           <SmallBtn onClick={handleR1Randomize}>Randomize Order</SmallBtn>
         </SectionToolbar>
         {/* Desktop table */}
@@ -953,6 +1059,57 @@ export default function ContestsPage() {
           </ModalBox>
         </Overlay>
       )}
+
+      {emailModal !== null && (
+        <Overlay onClick={() => setEmailModal(null)}>
+          <WideModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Email Quartets</ModalTitle>
+            <Field>
+              <Label>Subject</Label>
+              <Input
+                autoFocus
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <Label>Body</Label>
+              <Textarea
+                value={emailBody}
+                onChange={e => setEmailBody(e.target.value)}
+              />
+            </Field>
+            <HelpCard>
+              <HelpTitle>Available tokens</HelpTitle>
+              <HelpGrid>
+                <HelpToken>{'{{event}}'}</HelpToken><span>Event name</span>
+                <HelpToken>{'{{contest}}'}</HelpToken><span>Contest name</span>
+                <HelpToken>{'{{quartet}}'}</HelpToken><span>Quartet name</span>
+                <HelpToken>{'{{tenor}}'}</HelpToken><span>Tenor's name</span>
+                <HelpToken>{'{{tenorEmail}}'}</HelpToken><span>Tenor's email</span>
+                <HelpToken>{'{{lead}}'}</HelpToken><span>Lead's name</span>
+                <HelpToken>{'{{leadEmail}}'}</HelpToken><span>Lead's email</span>
+                <HelpToken>{'{{baritone}}'}</HelpToken><span>Baritone's name</span>
+                <HelpToken>{'{{baritoneEmail}}'}</HelpToken><span>Baritone's email</span>
+                <HelpToken>{'{{bass}}'}</HelpToken><span>Bass's name</span>
+                <HelpToken>{'{{bassEmail}}'}</HelpToken><span>Bass's email</span>
+              </HelpGrid>
+            </HelpCard>
+            <ModalActions>
+              <Btn onClick={() => setEmailModal(null)}>Cancel</Btn>
+              <Btn
+                $variant="primary"
+                disabled={sendingEmails || !emailSubject.trim() || !emailBody.trim()}
+                onClick={handleSendEmails}
+              >
+                {sendingEmails ? 'Sending…' : 'Send Emails'}
+              </Btn>
+            </ModalActions>
+          </WideModalBox>
+        </Overlay>
+      )}
+
+      {toast && <Toast>{toast}</Toast>}
     </Container>
   );
 }
