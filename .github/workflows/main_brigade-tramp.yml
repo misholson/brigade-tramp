@@ -55,6 +55,20 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_69F53C3695CB449580E8D33AD9685A2F }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E4510F39FEBE49D88B86A3B4D068097E }}
 
+      - name: Configure App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'brigade-tramp'
+          connection-strings-json: |
+            [
+              {
+                "name": "Default",
+                "value": "${{ vars.CONNECTIONSTRINGS__DEFAULT }}",
+                "type": "SQLAzure",
+                "slotSetting": false
+              }
+            ]
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
