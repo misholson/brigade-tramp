@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setCredentials } from '../store/authSlice';
+import { BASE_URL } from '../api/apiClient';
 
 const Container = styled.div`
   max-width: 360px;
@@ -76,7 +77,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: 'admin', password }),

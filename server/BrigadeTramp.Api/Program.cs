@@ -25,9 +25,12 @@ builder.Services.AddSingleton<EmailService>();
 
 builder.Services.AddOpenApi();
 
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:5173"];
+
 builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(p => p
-        .WithOrigins("http://localhost:5173")
+        .WithOrigins(allowedOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod()));
 
@@ -82,8 +85,9 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
-    app.UseCors();
 }
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
