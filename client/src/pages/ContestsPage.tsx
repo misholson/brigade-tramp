@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppSelector } from '../hooks/useAppDispatch';
+import { BASE_URL } from '../api/apiClient';
 
 const BREAKPOINT = '640px';
 
@@ -498,7 +499,7 @@ export default function ContestsPage() {
     if (emailModal === null) return;
     setSendingEmails(true);
     try {
-      const res = await fetch(`/api/contests/${emailModal}/send-emails`, {
+      const res = await fetch(`${BASE_URL}/contests/${emailModal}/send-emails`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: authHeader },
         body: JSON.stringify({ subject: emailSubject, body: emailBody }),
@@ -518,7 +519,7 @@ export default function ContestsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/events/${eventId}/contests`, {
+      const res = await fetch(`${BASE_URL}/events/${eventId}/contests`, {
         headers: { Authorization: authHeader },
       });
       if (!res.ok) { setError(`Failed to load (HTTP ${res.status})`); return; }
@@ -545,7 +546,7 @@ export default function ContestsPage() {
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    await fetch(`/api/events/${eventId}/contests`, {
+    await fetch(`${BASE_URL}/events/${eventId}/contests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify({ name: newName.trim() }),
@@ -557,7 +558,7 @@ export default function ContestsPage() {
 
   const handleRename = async () => {
     if (!editingName?.name.trim()) return;
-    await fetch(`/api/contests/${editingName.id}`, {
+    await fetch(`${BASE_URL}/contests/${editingName.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify({ name: editingName.name.trim() }),
@@ -568,7 +569,7 @@ export default function ContestsPage() {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this contest and all its quartets?')) return;
-    await fetch(`/api/contests/${id}`, {
+    await fetch(`${BASE_URL}/contests/${id}`, {
       method: 'DELETE',
       headers: { Authorization: authHeader },
     });
@@ -582,7 +583,7 @@ export default function ContestsPage() {
     }
     setGenerating(id);
     try {
-      const res = await fetch(`/api/contests/${id}/generate`, {
+      const res = await fetch(`${BASE_URL}/contests/${id}/generate`, {
         method: 'POST',
         headers: { Authorization: authHeader },
       });
@@ -600,7 +601,7 @@ export default function ContestsPage() {
   };
 
   const handleNameSave = async (quartetId: number) => {
-    await fetch(`/api/quartets/${quartetId}/name`, {
+    await fetch(`${BASE_URL}/quartets/${quartetId}/name`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify({ name: names[quartetId] ?? '' }),
@@ -611,7 +612,7 @@ export default function ContestsPage() {
     const raw = scores[quartetId] ?? '';
     const score = raw === '' ? null : parseFloat(raw);
     if (raw !== '' && isNaN(score as number)) return;
-    await fetch(`/api/quartets/${quartetId}/score`, {
+    await fetch(`${BASE_URL}/quartets/${quartetId}/score`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify({ score }),
@@ -622,7 +623,7 @@ export default function ContestsPage() {
     const raw = scores2[quartetId] ?? '';
     const score2 = raw === '' ? null : parseFloat(raw);
     if (raw !== '' && isNaN(score2 as number)) return;
-    await fetch(`/api/quartets/${quartetId}/score2`, {
+    await fetch(`${BASE_URL}/quartets/${quartetId}/score2`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify({ score2 }),
@@ -641,7 +642,7 @@ export default function ContestsPage() {
     if (isNaN(count) || count < 1) return;
     setPreparingRound2(true);
     try {
-      const res = await fetch(`/api/contests/${round2Modal}/prepare-round2`, {
+      const res = await fetch(`${BASE_URL}/contests/${round2Modal}/prepare-round2`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: authHeader },
         body: JSON.stringify({ count, assignSongs: round2AssignSongs }),

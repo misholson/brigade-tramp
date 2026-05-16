@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppSelector } from '../hooks/useAppDispatch';
+import { BASE_URL } from '../api/apiClient';
 
 const Container = styled.div`
   max-width: 600px;
@@ -100,7 +101,7 @@ export default function ImportPage() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch(`/api/events/${eventId}/import`, {
+      const res = await fetch(`${BASE_URL}/events/${eventId}/import`, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/csv',

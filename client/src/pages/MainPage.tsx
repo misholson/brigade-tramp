@@ -9,6 +9,7 @@ import TrampBanner from '../components/TrampBanner';
 import HelpCard from '../components/HelpCard';
 import SongListCard from '../components/SongListCard';
 import ContestInfoCard, { type PublicContest } from '../components/ContestInfoCard';
+import { BASE_URL } from '../api/apiClient';
 
 const PART_ORDER: Part[] = ['Tenor', 'Lead', 'Baritone', 'Bass'];
 
@@ -46,7 +47,7 @@ export default function MainPage() {
 
   useEffect(() => {
     if (!code) return;
-    fetch(`/api/singer/${code}/songs`)
+    fetch(`${BASE_URL}/singer/${code}/songs`)
       .then(r => r.ok ? r.json() as Promise<string[]> : [])
       .then(setSongs)
       .catch(() => {});
@@ -54,7 +55,7 @@ export default function MainPage() {
 
   useEffect(() => {
     if (!code) return;
-    fetch(`/api/singer/${code}/contests`)
+    fetch(`${BASE_URL}/singer/${code}/contests`)
       .then(r => r.ok ? r.json() as Promise<PublicContest[]> : [])
       .then(setContestInfos)
       .catch(() => {});

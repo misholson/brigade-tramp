@@ -6,6 +6,7 @@ import { fetchEvents, createEvent, updateEvent, deleteEvent, addSinger, editSing
 import { clearCredentials } from '../store/authSlice';
 import type { EventWithSingersDto, SingerDto } from '../types';
 import EventCard from '../components/EventCard';
+import { BASE_URL } from '../api/apiClient';
 
 const Container = styled.div`
   max-width: 720px;
@@ -194,7 +195,7 @@ export default function AdminPage() {
   };
 
   const handleDownloadPdf = async (id: number) => {
-    const res = await fetch(`/api/events/${id}/qr-pdf`, {
+    const res = await fetch(`${BASE_URL}/events/${id}/qr-pdf`, {
       headers: { Authorization: `Basic ${credentials ?? ''}` },
     });
     if (!res.ok) { alert('Failed to generate PDF'); return; }
@@ -227,7 +228,7 @@ export default function AdminPage() {
   };
 
   const openSongs = async (eventId: number) => {
-    const res = await fetch(`/api/events/${eventId}/songs`, {
+    const res = await fetch(`${BASE_URL}/events/${eventId}/songs`, {
       headers: { Authorization: `Basic ${credentials ?? ''}` },
     });
     const titles: string[] = res.ok ? await res.json() : [];
@@ -238,7 +239,7 @@ export default function AdminPage() {
     if (!songsModal) return;
     setSongsSaving(true);
     const titles = songsModal.text.split('\n').map(t => t.trim()).filter(Boolean);
-    await fetch(`/api/events/${songsModal.eventId}/songs`, {
+    await fetch(`${BASE_URL}/events/${songsModal.eventId}/songs`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Basic ${credentials ?? ''}` },
       body: JSON.stringify({ titles }),
