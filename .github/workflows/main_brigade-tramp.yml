@@ -59,6 +59,14 @@ jobs:
         uses: azure/appservice-settings@v1
         with:
           app-name: 'brigade-tramp'
+          app-settings-json: |
+            [
+              {
+                "name": "AdminPassword",
+                "value": "${{ secrets.ADMINPASSWORD }}",
+                "slotSetting": false
+              }
+            ]
           connection-strings-json: |
             [
               {
