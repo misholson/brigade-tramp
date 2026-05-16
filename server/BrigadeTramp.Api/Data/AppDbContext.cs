@@ -21,6 +21,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<ContestQuartetSinger>()
             .HasKey(x => new { x.QuartetId, x.SingerId });
 
+        modelBuilder.Entity<ContestQuartetSinger>()
+            .HasOne(x => x.Quartet)
+            .WithMany(x => x.SingerLinks)
+            .HasForeignKey(x => x.QuartetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ContestQuartetSinger>()
+            .HasOne(x => x.Singer)
+            .WithMany()
+            .HasForeignKey(x => x.SingerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<Singer>()
             .HasIndex(s => s.Code)
             .IsUnique();
