@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppSelector } from '../hooks/useAppDispatch';
@@ -363,6 +363,35 @@ const HelpToken = styled.code`
   white-space: nowrap;
 `;
 
+const JudgeGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+  & > * { min-width: 0; }
+  input { width: 100%; box-sizing: border-box; }
+`;
+
+const JudgeTotal = styled.div`
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: ${p => p.theme.colors.textSecondary};
+  margin-bottom: 14px;
+`;
+
+const ScoringQuartetName = styled.div`
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+`;
+
+const ScoringSong = styled.div`
+  font-size: 0.9rem;
+  color: ${p => p.theme.colors.textMuted};
+  margin-bottom: 18px;
+`;
+
 const Toast = styled.div`
   position: fixed;
   bottom: 24px;
@@ -480,6 +509,9 @@ export default function ContestsPage() {
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmails, setSendingEmails] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [scoringModal, setScoringModal] = useState<{ quartets: ContestQuartet[]; index: number; round: 1 | 2 } | null>(null);
+  const [judgeScores, setJudgeScores] = useState<[string, string, string, string]>(['', '', '', '']);
+  const judgeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
 
   const authHeader = `Basic ${credentials ?? ''}`;
 
@@ -488,6 +520,10 @@ export default function ContestsPage() {
     const t = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(t);
   }, [toast]);
+
+  useEffect(() => {
+    if (scoringModal !== null) judgeRefs.current[0]?.focus();
+  }, [scoringModal?.index]);
 
   const openEmailModal = (contestId: number) => {
     setEmailSubject(DEFAULT_EMAIL_SUBJECT);
@@ -630,6 +666,47 @@ export default function ContestsPage() {
     });
   };
 
+  const openScoringModal = (contest: ContestData) => {
+    const ordered = r1ShuffledIds[contest.id]
+      ? r1ShuffledIds[contest.id]
+          .map(id => contest.quartets.find(q => q.id === id))
+          .filter((q): q is ContestQuartet => q !== undefined)
+      : contest.quartets;
+    const firstUnscored = ordered.findIndex(q => scores[q.id] === '' || scores[q.id] == null);
+    setScoringModal({ quartets: ordered, index: firstUnscored === -1 ? 0 : firstUnscored, round: 1 });
+    setJudgeScores(['', '', '', '']);
+  };
+
+  const openScoringModalRound2 = (quartets: ContestQuartet[]) => {
+    const firstUnscored = quartets.findIndex(q => scores2[q.id] === '' || scores2[q.id] == null);
+    setScoringModal({ quartets, index: firstUnscored === -1 ? 0 : firstUnscored, round: 2 });
+    setJudgeScores(['', '', '', '']);
+  };
+
+  const handleScoringNext = async () => {
+    if (!scoringModal) return;
+    const quartet = scoringModal.quartets[scoringModal.index];
+    const total = judgeScores.reduce((sum, s) => sum + (parseFloat(s) || 0), 0);
+    const field = scoringModal.round === 2 ? 'score2' : 'score';
+    await fetch(`${BASE_URL}/quartets/${quartet.id}/${field}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify({ [field]: total }),
+    });
+    if (scoringModal.round === 2) {
+      setScores2(s => ({ ...s, [quartet.id]: String(total) }));
+    } else {
+      setScores(s => ({ ...s, [quartet.id]: String(total) }));
+    }
+    if (scoringModal.index + 1 >= scoringModal.quartets.length) {
+      setScoringModal(null);
+      load();
+    } else {
+      setScoringModal(m => m && ({ ...m, index: m.index + 1 }));
+      setJudgeScores(['', '', '', '']);
+    }
+  };
+
   const openRound2Modal = (contest: ContestData) => {
     setRound2CountStr(String(contest.round2Count ?? 4));
     setRound2AssignSongs(true);
@@ -703,7 +780,10 @@ export default function ContestsPage() {
       <Round2Section>
         <Round2SectionHeader>
           <span>Round 2 — Top {contest.round2Count}</span>
-          <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <SmallBtn onClick={() => openScoringModalRound2(top)}>Score Quartets</SmallBtn>
+            <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>
+          </div>
         </Round2SectionHeader>
 
         <DesktopOnly>
@@ -969,6 +1049,12 @@ export default function ContestsPage() {
               </Btn>
               <Btn
                 disabled={contest.quartets.length === 0}
+                onClick={() => openScoringModal(contest)}
+              >
+                Score Quartets
+              </Btn>
+              <Btn
+                disabled={contest.quartets.length === 0}
                 onClick={() => openRound2Modal(contest)}
               >
                 Prepare Round 2
@@ -1109,6 +1195,57 @@ export default function ContestsPage() {
           </WideModalBox>
         </Overlay>
       )}
+
+      {scoringModal !== null && (() => {
+        const quartet = scoringModal.quartets[scoringModal.index];
+        const total = judgeScores.reduce((sum, s) => sum + (parseFloat(s) || 0), 0);
+        const allFilled = judgeScores.every(s => s !== '' && !isNaN(parseFloat(s)));
+        const isLast = scoringModal.index + 1 >= scoringModal.quartets.length;
+        return (
+          <Overlay>
+            <ModalBox onClick={e => e.stopPropagation()}>
+              <ModalTitle>
+                Score Quartets ({scoringModal.index + 1} of {scoringModal.quartets.length})
+              </ModalTitle>
+              <ScoringQuartetName>{names[quartet.id] ?? quartet.name}</ScoringQuartetName>
+              {quartet.songTitle
+                ? <ScoringSong>{quartet.songTitle}</ScoringSong>
+                : <ScoringSong>&nbsp;</ScoringSong>}
+              <JudgeGrid>
+                {([0, 1, 2, 3] as const).map(i => (
+                  <Field key={i}>
+                    <Label>Judge {i + 1}</Label>
+                    <Input
+                      ref={el => { judgeRefs.current[i] = el; }}
+                      autoFocus={i === 0}
+                      type="number"
+                      step="0.1"
+                      value={judgeScores[i]}
+                      onChange={e => setJudgeScores(prev => {
+                        const next = [...prev] as [string, string, string, string];
+                        next[i] = e.target.value;
+                        return next;
+                      })}
+                      onKeyDown={e => {
+                        if (e.key !== 'Enter') return;
+                        if (i < 3) { judgeRefs.current[i + 1]?.focus(); }
+                        else if (allFilled) { handleScoringNext(); }
+                      }}
+                    />
+                  </Field>
+                ))}
+              </JudgeGrid>
+              <JudgeTotal>Total: {allFilled ? total.toFixed(1) : '—'}</JudgeTotal>
+              <ModalActions>
+                <Btn onClick={() => setScoringModal(null)}>Cancel</Btn>
+                <Btn $variant="primary" disabled={!allFilled} onClick={handleScoringNext}>
+                  {isLast ? 'Finish' : 'Next'}
+                </Btn>
+              </ModalActions>
+            </ModalBox>
+          </Overlay>
+        );
+      })()}
 
       {toast && <Toast>{toast}</Toast>}
     </Container>
