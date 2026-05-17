@@ -33,7 +33,8 @@ const CardHeader = styled.div`
   padding: 12px 16px;
   background: ${p => p.theme.colors.surfaceAlt};
   cursor: pointer;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 `;
 
 const EventInfo = styled.div`
@@ -56,7 +57,6 @@ const EventDate = styled.div`
 const Actions = styled.div`
   display: flex;
   gap: 6px;
-  flex-shrink: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
 `;
