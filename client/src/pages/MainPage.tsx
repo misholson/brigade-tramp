@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
-import { fetchSingerByCode, toggleSungWith } from '../store/singerSlice';
+import { fetchSingerByCode, toggleSungWith, toggleSungWithTwice } from '../store/singerSlice';
 import type { Part, SingerDto } from '../types';
 import PartGroup from '../components/PartGroup';
 import TrampBanner from '../components/TrampBanner';
@@ -69,7 +69,8 @@ export default function MainPage() {
     return <CenteredMsg>Singer not found.</CenteredMsg>;
   }
 
-  const { singer, allSingers, sungWithIds } = currentSinger;
+  const { singer, allSingers, sungWithIds, allowBusyBee, sungWithTwiceIds } = currentSinger;
+  const twiceIds = sungWithTwiceIds ?? [];
   const selfPart = singer.part;
 
   const grouped = PART_ORDER
@@ -82,8 +83,16 @@ export default function MainPage() {
   const requiredAll = allSingers.filter(s => s.id !== singer.id && s.status !== 'Optional');
   const isSuperTramp = requiredAll.length > 0 && requiredAll.every(s => sungWithIds.includes(s.id));
 
+  const isBusyBeeRound = allowBusyBee && isTramp;
+  const isBusyBee = isBusyBeeRound && requiredOtherPart.every(s => twiceIds.includes(s.id));
+
   const handleToggle = (s: SingerDto, remove: boolean) => {
-    dispatch(toggleSungWith({ singerId: singer.id, otherId: s.id, remove }));
+    if (isBusyBeeRound) {
+      const alreadyTwice = twiceIds.includes(s.id);
+      dispatch(toggleSungWithTwice({ singerId: singer.id, otherId: s.id, remove: alreadyTwice }));
+    } else {
+      dispatch(toggleSungWith({ singerId: singer.id, otherId: s.id, remove }));
+    }
   };
 
   return (
@@ -94,7 +103,12 @@ export default function MainPage() {
       {contestInfos.map(c => (
         <ContestInfoCard key={c.name} contest={c} />
       ))}
-      <TrampBanner isTramp={isTramp} isSuperTramp={isSuperTramp} />
+      <TrampBanner
+        isTramp={isTramp}
+        isSuperTramp={isSuperTramp}
+        allowBusyBee={allowBusyBee}
+        isBusyBee={isBusyBee}
+      />
       {grouped.map(({ part, singers }) => (
         <PartGroup
           key={part}
@@ -104,6 +118,8 @@ export default function MainPage() {
           sungWithIds={sungWithIds}
           isOwnPart={part === selfPart}
           onToggle={handleToggle}
+          isBusyBeeRound={isBusyBeeRound}
+          sungWithTwiceIds={twiceIds}
         />
       ))}
     </Container>

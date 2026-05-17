@@ -25,15 +25,21 @@ public static class SingerEndpoints
                 .ThenBy(s => s.BadgeName)
                 .ThenBy(s => s.LastName)];
 
-            var sungWithIds = await db.SingerSungWiths
+            var sungWithRows = await db.SingerSungWiths
                 .Where(sw => sw.SingerId == singer.Id)
-                .Select(sw => sw.SungWithSingerId)
                 .ToListAsync();
+
+            var sungWithIds = sungWithRows.Select(sw => sw.SungWithSingerId).ToList();
+            var sungWithTwiceIds = sungWithRows.Where(sw => sw.Count >= 2).Select(sw => sw.SungWithSingerId).ToList();
+
+            var ev = await db.Events.FindAsync(singer.EventId);
 
             return Results.Ok(new SingerDetailDto(
                 ToDto(singer),
                 allSingers.Select(ToDto).ToList(),
-                sungWithIds
+                sungWithIds,
+                ev?.AllowBusyBee ?? false,
+                sungWithTwiceIds
             ));
         });
 
@@ -55,6 +61,32 @@ public static class SingerEndpoints
             if (row is not null)
             {
                 db.SingerSungWiths.Remove(row);
+                await db.SaveChangesAsync();
+            }
+            return Results.Ok();
+        });
+
+        app.MapPost("/api/singer/{singerId:int}/sung-with-twice/{otherId:int}", async (int singerId, int otherId, AppDbContext db) =>
+        {
+            var row = await db.SingerSungWiths.FindAsync(singerId, otherId);
+            if (row is null)
+            {
+                db.SingerSungWiths.Add(new SingerSungWith { SingerId = singerId, SungWithSingerId = otherId, Count = 2 });
+            }
+            else
+            {
+                row.Count = 2;
+            }
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        });
+
+        app.MapDelete("/api/singer/{singerId:int}/sung-with-twice/{otherId:int}", async (int singerId, int otherId, AppDbContext db) =>
+        {
+            var row = await db.SingerSungWiths.FindAsync(singerId, otherId);
+            if (row is not null && row.Count >= 2)
+            {
+                row.Count = 1;
                 await db.SaveChangesAsync();
             }
             return Results.Ok();

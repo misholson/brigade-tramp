@@ -20,7 +20,7 @@ public static class EventEndpoints
                 .ToListAsync();
 
             return events.Select(e => new EventWithSingersDto(
-                e.Id, e.Name, e.Date,
+                e.Id, e.Name, e.Date, e.AllowBusyBee,
                 e.Singers
                     .OrderBy(s => s.BadgeName).ThenBy(s => s.LastName)
                     .Select(SingerEndpoints.ToDto)
@@ -30,10 +30,10 @@ public static class EventEndpoints
 
         group.MapPost("/", async (CreateEventDto dto, AppDbContext db) =>
         {
-            var ev = new Event { Name = dto.Name, Date = dto.Date };
+            var ev = new Event { Name = dto.Name, Date = dto.Date, AllowBusyBee = dto.AllowBusyBee };
             db.Events.Add(ev);
             await db.SaveChangesAsync();
-            return Results.Created($"/api/events/{ev.Id}", new EventDto(ev.Id, ev.Name, ev.Date));
+            return Results.Created($"/api/events/{ev.Id}", new EventDto(ev.Id, ev.Name, ev.Date, ev.AllowBusyBee));
         });
 
         group.MapPut("/{id:int}", async (int id, UpdateEventDto dto, AppDbContext db) =>
@@ -42,8 +42,9 @@ public static class EventEndpoints
             if (ev is null) return Results.NotFound();
             ev.Name = dto.Name;
             ev.Date = dto.Date;
+            ev.AllowBusyBee = dto.AllowBusyBee;
             await db.SaveChangesAsync();
-            return Results.Ok(new EventDto(ev.Id, ev.Name, ev.Date));
+            return Results.Ok(new EventDto(ev.Id, ev.Name, ev.Date, ev.AllowBusyBee));
         });
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db) =>

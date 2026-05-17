@@ -57,6 +57,8 @@ using (var scope = app.Services.CreateScope())
             "CREATE TABLE IF NOT EXISTS ContestQuartetSingers (QuartetId INTEGER NOT NULL, SingerId INTEGER NOT NULL, PRIMARY KEY (QuartetId, SingerId))",
             "ALTER TABLE Contests ADD COLUMN Round2Count INTEGER",
             "ALTER TABLE ContestQuartets ADD COLUMN Song2Title TEXT",
+            "ALTER TABLE Events ADD COLUMN AllowBusyBee INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE SingerSungWiths ADD COLUMN Count INTEGER NOT NULL DEFAULT 1",
         }
         : new[]
         {
@@ -72,6 +74,8 @@ using (var scope = app.Services.CreateScope())
             "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='ContestQuartetSingers') CREATE TABLE ContestQuartetSingers (QuartetId INT NOT NULL, SingerId INT NOT NULL, PRIMARY KEY (QuartetId, SingerId))",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Contests') AND name='Round2Count') ALTER TABLE Contests ADD Round2Count INT NULL",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='Song2Title') ALTER TABLE ContestQuartets ADD Song2Title NVARCHAR(500) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Events') AND name='AllowBusyBee') ALTER TABLE Events ADD AllowBusyBee BIT NOT NULL DEFAULT 0",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('SingerSungWiths') AND name='Count') ALTER TABLE SingerSungWiths ADD Count INT NOT NULL DEFAULT 1",
         };
 
     foreach (var sql in patches)

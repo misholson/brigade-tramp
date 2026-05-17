@@ -10,6 +10,8 @@ interface Props {
   sungWithIds: number[];
   isOwnPart: boolean;
   onToggle: (singer: SingerDto, remove: boolean) => void;
+  isBusyBeeRound?: boolean;
+  sungWithTwiceIds?: number[];
 }
 
 const GroupWrapper = styled.div`
@@ -58,10 +60,15 @@ const SingerGrid = styled.div`
   padding: 8px 0 0;
 `;
 
-export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPart, onToggle }: Props) {
+export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPart, onToggle, isBusyBeeRound, sungWithTwiceIds }: Props) {
+  const twiceIds = sungWithTwiceIds ?? [];
+
   const remaining = isOwnPart
     ? 0
-    : singers.filter(s => s.id !== selfId && s.status !== 'Optional' && !sungWithIds.includes(s.id)).length;
+    : singers.filter(s => {
+        if (s.id === selfId || s.status === 'Optional') return false;
+        return isBusyBeeRound ? !twiceIds.includes(s.id) : !sungWithIds.includes(s.id);
+      }).length;
 
   const [isExpanded, setIsExpanded] = useState(remaining > 1);
 
@@ -80,6 +87,7 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
           {singers.map(singer => {
             const isSelf = singer.id === selfId;
             const isSelected = isSelf || sungWithIds.includes(singer.id);
+            const isTwice = isSelf || twiceIds.includes(singer.id);
             return (
               <SingerCard
                 key={singer.id}
@@ -90,9 +98,11 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
                 isSelected={isSelected}
                 isSelf={isSelf}
                 isOptional={singer.status === 'Optional'}
+                isBusyBeeRound={isBusyBeeRound}
+                sungWithTwice={isTwice}
                 onClick={() => {
                   if (isSelf) return;
-                  onToggle(singer, isSelected);
+                  onToggle(singer, isBusyBeeRound ? isTwice : isSelected);
                 }}
               />
             );

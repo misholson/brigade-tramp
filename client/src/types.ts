@@ -16,11 +16,14 @@ export interface SingerDetailDto {
   singer: SingerDto;
   allSingers: SingerDto[];
   sungWithIds: number[];
+  allowBusyBee: boolean;
+  sungWithTwiceIds: number[];
 }
 
 export interface EventWithSingersDto {
   id: number;
   name: string;
   date: string;
+  allowBusyBee: boolean;
   singers: SingerDto[];
 }

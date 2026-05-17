@@ -134,7 +134,7 @@ const StatusMsg = styled.div`
   color: ${p => p.theme.colors.textMuted};
 `;
 
-interface EventFormState { name: string; date: string; }
+interface EventFormState { name: string; date: string; allowBusyBee: boolean; }
 interface SingerFormState {
   eventId: number;
   badgeName: string;
@@ -157,7 +157,7 @@ export default function AdminPage() {
 
   const [editEvent, setEditEvent] = useState<EventWithSingersDto | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
-  const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '' });
+  const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '', allowBusyBee: false });
 
   const [singerForm, setSingerForm] = useState<SingerFormState | null>(null);
   const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number }) | null>(null);
@@ -167,12 +167,12 @@ export default function AdminPage() {
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
   const openCreateEvent = () => {
-    setEventForm({ name: '', date: '' });
+    setEventForm({ name: '', date: '', allowBusyBee: false });
     setIsCreatingEvent(true);
   };
 
   const openEditEvent = (ev: EventWithSingersDto) => {
-    setEventForm({ name: ev.name, date: ev.date });
+    setEventForm({ name: ev.name, date: ev.date, allowBusyBee: ev.allowBusyBee });
     setEditEvent(ev);
   };
 
@@ -183,9 +183,9 @@ export default function AdminPage() {
 
   const handleSaveEvent = () => {
     if (editEvent) {
-      dispatch(updateEvent({ id: editEvent.id, ...eventForm }));
+      dispatch(updateEvent({ id: editEvent.id, name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee }));
     } else {
-      dispatch(createEvent(eventForm));
+      dispatch(createEvent({ name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee }));
     }
     closeEventModal();
   };
@@ -308,6 +308,16 @@ export default function AdminPage() {
                 value={eventForm.date}
                 onChange={e => setEventForm(f => ({ ...f, date: e.target.value }))}
               />
+            </Field>
+            <Field>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={eventForm.allowBusyBee}
+                  onChange={e => setEventForm(f => ({ ...f, allowBusyBee: e.target.checked }))}
+                />
+                Allow Busy Bee
+              </label>
             </Field>
             <ModalActions>
               <Btn $variant="secondary" onClick={closeEventModal}>Cancel</Btn>

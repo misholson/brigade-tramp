@@ -9,18 +9,20 @@ interface Props {
   isSelected: boolean;
   isSelf: boolean;
   isOptional?: boolean;
+  isBusyBeeRound?: boolean;
+  sungWithTwice?: boolean;
   onClick: () => void;
 }
 
-const Card = styled.div<{ $part: Part; $selected: boolean; $isSelf: boolean }>`
+const Card = styled.div<{ $part: Part; $dark: boolean }>`
   border-radius: ${p => p.theme.cardBorderRadius};
   padding: 10px 8px;
   cursor: pointer;
   background-color: ${p =>
-    p.$selected || p.$isSelf
+    p.$dark
       ? p.theme.parts[p.$part].dark
       : p.theme.parts[p.$part].light};
-  color: ${p => (p.$selected || p.$isSelf ? '#fff' : p.theme.colors.cardUnselectedText)};
+  color: ${p => (p.$dark ? '#fff' : p.theme.colors.cardUnselectedText)};
   transition: background-color 0.15s ease;
   display: flex;
   flex-direction: column;
@@ -61,10 +63,21 @@ const OptionalMark = styled.span`
   margin-left: 2px;
 `;
 
-export default function SingerCard({ badgeName, firstName, lastName, part, isSelected, isSelf, isOptional, onClick }: Props) {
+export default function SingerCard({ badgeName, firstName, lastName, part, isSelected, isSelf, isOptional, isBusyBeeRound, sungWithTwice, onClick }: Props) {
+  const isDark = isBusyBeeRound
+    ? (sungWithTwice || isSelf)
+    : (isSelected || isSelf);
+
+  const checkmark = isBusyBeeRound
+    ? (sungWithTwice || isSelf) ? '✓✓'
+      : isSelected ? '✓'
+      : null
+    : (isSelected || isSelf) ? '✓'
+    : null;
+
   return (
-    <Card $part={part} $selected={isSelected} $isSelf={isSelf} onClick={onClick}>
-      {(isSelected || isSelf) && <Check>✓</Check>}
+    <Card $part={part} $dark={isDark} onClick={onClick}>
+      {checkmark && <Check>{checkmark}</Check>}
       <BadgeName>{badgeName}{isOptional && <OptionalMark>*</OptionalMark>}</BadgeName>
       <FullName>{firstName} {lastName}</FullName>
     </Card>

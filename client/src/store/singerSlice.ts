@@ -27,6 +27,20 @@ export const toggleSungWith = createAsyncThunk(
   }
 );
 
+export const toggleSungWithTwice = createAsyncThunk(
+  'singer/toggleSungWithTwice',
+  async ({ singerId, otherId, remove }: ToggleArgs, { getState }) => {
+    const { auth } = getState() as RootState;
+    const client = createApiClient(auth.credentials);
+    if (remove) {
+      await client.delete(`/singer/${singerId}/sung-with-twice/${otherId}`);
+    } else {
+      await client.post(`/singer/${singerId}/sung-with-twice/${otherId}`);
+    }
+    return { otherId, remove };
+  }
+);
+
 interface SingerState {
   currentSinger: SingerDetailDto | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -66,6 +80,30 @@ const singerSlice = createSlice({
           state.currentSinger.sungWithIds.push(otherId);
         } else {
           state.currentSinger.sungWithIds = state.currentSinger.sungWithIds.filter(id => id !== otherId);
+        }
+      })
+      .addCase(toggleSungWithTwice.pending, (state, action) => {
+        if (!state.currentSinger) return;
+        const { otherId, remove } = action.meta.arg;
+        if (remove) {
+          state.currentSinger.sungWithTwiceIds = state.currentSinger.sungWithTwiceIds.filter(id => id !== otherId);
+        } else {
+          if (!state.currentSinger.sungWithTwiceIds) state.currentSinger.sungWithTwiceIds = [];
+          state.currentSinger.sungWithTwiceIds.push(otherId);
+          // Ensure also in sungWithIds
+          if (!state.currentSinger.sungWithIds.includes(otherId)) {
+            state.currentSinger.sungWithIds.push(otherId);
+          }
+        }
+      })
+      .addCase(toggleSungWithTwice.rejected, (state, action) => {
+        if (!state.currentSinger) return;
+        const { otherId, remove } = action.meta.arg;
+        if (remove) {
+          if (!state.currentSinger.sungWithTwiceIds) state.currentSinger.sungWithTwiceIds = [];
+          state.currentSinger.sungWithTwiceIds.push(otherId);
+        } else {
+          state.currentSinger.sungWithTwiceIds = (state.currentSinger.sungWithTwiceIds ?? []).filter(id => id !== otherId);
         }
       });
   },
