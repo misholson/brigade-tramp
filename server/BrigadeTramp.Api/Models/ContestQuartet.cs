@@ -10,5 +10,7 @@ public class ContestQuartet
     public decimal? Score2 { get; set; }
     public string? SongTitle { get; set; }
     public string? Song2Title { get; set; }
+    public int SortOrder { get; set; }
+    public int SortOrder2 { get; set; }
     public List<ContestQuartetSinger> SingerLinks { get; set; } = [];
 }

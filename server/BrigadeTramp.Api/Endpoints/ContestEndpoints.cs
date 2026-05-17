@@ -101,6 +101,7 @@ public static class ContestEndpoints
             for (int i = 0; i < quartets.Count; i++)
             {
                 quartets[i].Name = $"Quartet {i + 1}";
+                quartets[i].SortOrder = i;
                 if (songTitles.Count > 0)
                 {
                     if (i % songTitles.Count == 0)
@@ -205,6 +206,31 @@ public static class ContestEndpoints
             return Results.Ok();
         }).RequireAuthorization();
 
+        app.MapPost("/api/contests/{id:int}/reorder", async (int id, ReorderContestDto dto, AppDbContext db) =>
+        {
+            var quartets = await db.ContestQuartets.Where(q => q.ContestId == id).ToListAsync();
+            for (int i = 0; i < dto.Ids.Count; i++)
+            {
+                var quartet = quartets.FirstOrDefault(q => q.Id == dto.Ids[i]);
+                if (quartet is not null) quartet.SortOrder = i;
+            }
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
+
+        app.MapPost("/api/contests/{id:int}/reorder2", async (int id, ReorderContestDto dto, AppDbContext db) =>
+        {
+            var quartets = await db.ContestQuartets.Where(q => q.ContestId == id).ToListAsync();
+            foreach (var quartet in quartets) quartet.SortOrder2 = 0;
+            for (int i = 0; i < dto.Ids.Count; i++)
+            {
+                var quartet = quartets.FirstOrDefault(q => q.Id == dto.Ids[i]);
+                if (quartet is not null) quartet.SortOrder2 = i + 1;
+            }
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
+
         app.MapPost("/api/contests/{id:int}/send-emails", async (int id, SendEmailsDto dto, AppDbContext db, EmailService emailService) =>
         {
             var contest = await db.Contests
@@ -285,8 +311,9 @@ public static class ContestEndpoints
     static ContestDto ToDto(Contest c) => new(
         c.Id, c.Name, c.EventId, c.Round2Count,
         c.Quartets
+            .OrderBy(q => q.SortOrder)
             .Select(q => new ContestQuartetDto(
-                q.Id, q.Name, q.Score, q.Score2, q.SongTitle, q.Song2Title,
+                q.Id, q.Name, q.Score, q.Score2, q.SongTitle, q.Song2Title, q.SortOrder2,
                 q.SingerLinks
                     .Select(sl => new ContestSingerDto(
                         sl.Singer.Id, sl.Singer.BadgeName, sl.Singer.FirstName, sl.Singer.LastName, sl.Singer.Part.ToString()))

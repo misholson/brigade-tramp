@@ -59,6 +59,8 @@ using (var scope = app.Services.CreateScope())
             "ALTER TABLE ContestQuartets ADD COLUMN Song2Title TEXT",
             "ALTER TABLE Events ADD COLUMN AllowBusyBee INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE SingerSungWiths ADD COLUMN Count INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE ContestQuartets ADD COLUMN SortOrder INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ContestQuartets ADD COLUMN SortOrder2 INTEGER NOT NULL DEFAULT 0",
         }
         : new[]
         {
@@ -76,6 +78,8 @@ using (var scope = app.Services.CreateScope())
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='Song2Title') ALTER TABLE ContestQuartets ADD Song2Title NVARCHAR(500) NULL",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Events') AND name='AllowBusyBee') ALTER TABLE Events ADD AllowBusyBee BIT NOT NULL DEFAULT 0",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('SingerSungWiths') AND name='Count') ALTER TABLE SingerSungWiths ADD Count INT NOT NULL DEFAULT 1",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='SortOrder') ALTER TABLE ContestQuartets ADD SortOrder INT NOT NULL DEFAULT 0",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='SortOrder2') ALTER TABLE ContestQuartets ADD SortOrder2 INT NOT NULL DEFAULT 0",
         };
 
     foreach (var sql in patches)

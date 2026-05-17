@@ -460,6 +460,7 @@ interface ContestQuartet {
   score2: number | null;
   songTitle: string | null;
   song2Title: string | null;
+  sortOrder2: number;
   singers: ContestSinger[];
 }
 
@@ -502,8 +503,6 @@ export default function ContestsPage() {
   const [round2CountStr, setRound2CountStr] = useState('4');
   const [round2AssignSongs, setRound2AssignSongs] = useState(true);
   const [preparingRound2, setPreparingRound2] = useState(false);
-  const [r1ShuffledIds, setR1ShuffledIds] = useState<Record<number, number[]>>({});
-  const [r2ShuffledIds, setR2ShuffledIds] = useState<Record<number, number[]>>({});
   const [emailModal, setEmailModal] = useState<number | null>(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
@@ -628,8 +627,6 @@ export default function ContestsPage() {
         alert(text || 'Failed to generate quartets.');
         return;
       }
-      setR1ShuffledIds(prev => { const n = { ...prev }; delete n[id]; return n; });
-      setR2ShuffledIds(prev => { const n = { ...prev }; delete n[id]; return n; });
       load();
     } finally {
       setGenerating(null);
@@ -667,13 +664,8 @@ export default function ContestsPage() {
   };
 
   const openScoringModal = (contest: ContestData) => {
-    const ordered = r1ShuffledIds[contest.id]
-      ? r1ShuffledIds[contest.id]
-          .map(id => contest.quartets.find(q => q.id === id))
-          .filter((q): q is ContestQuartet => q !== undefined)
-      : contest.quartets;
-    const firstUnscored = ordered.findIndex(q => scores[q.id] === '' || scores[q.id] == null);
-    setScoringModal({ quartets: ordered, index: firstUnscored === -1 ? 0 : firstUnscored, round: 1 });
+    const firstUnscored = contest.quartets.findIndex(q => scores[q.id] === '' || scores[q.id] == null);
+    setScoringModal({ quartets: contest.quartets, index: firstUnscored === -1 ? 0 : firstUnscored, round: 1 });
     setJudgeScores(['', '', '', '']);
   };
 
@@ -740,15 +732,19 @@ export default function ContestsPage() {
       .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
       .slice(0, contest.round2Count);
 
-    const handleR2Randomize = () => {
+    const handleR2Randomize = async () => {
       const ids = [...baseTop].sort(() => Math.random() - 0.5).map(q => q.id);
-      setR2ShuffledIds(prev => ({ ...prev, [contest.id]: ids }));
+      await fetch(`${BASE_URL}/contests/${contest.id}/reorder2`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ ids }),
+      });
+      load();
     };
 
-    const top = r2ShuffledIds[contest.id]
-      ? r2ShuffledIds[contest.id]
-          .map(id => baseTop.find(q => q.id === id))
-          .filter((q): q is ContestQuartet => q !== undefined)
+    const hasSortOrder2 = baseTop.length > 0 && baseTop.every(q => q.sortOrder2 > 0);
+    const top = hasSortOrder2
+      ? [...baseTop].sort((a, b) => a.sortOrder2 - b.sortOrder2)
       : baseTop;
 
     if (baseTop.length === 0) {
@@ -886,15 +882,16 @@ export default function ContestsPage() {
       return <EmptyMsg>No quartets yet — click Generate Quartets.</EmptyMsg>;
     }
 
-    const orderedQuartets = r1ShuffledIds[contest.id]
-      ? r1ShuffledIds[contest.id]
-          .map(id => contest.quartets.find(q => q.id === id))
-          .filter((q): q is ContestQuartet => q !== undefined)
-      : contest.quartets;
+    const orderedQuartets = contest.quartets;
 
-    const handleR1Randomize = () => {
+    const handleR1Randomize = async () => {
       const ids = [...contest.quartets].sort(() => Math.random() - 0.5).map(q => q.id);
-      setR1ShuffledIds(prev => ({ ...prev, [contest.id]: ids }));
+      await fetch(`${BASE_URL}/contests/${contest.id}/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ ids }),
+      });
+      load();
     };
 
     // Map singerId → ordered list of quartet indices they appear in
