@@ -8,3 +8,4 @@ public record AddSingerDto(string BadgeName, string FirstName, string LastName, 
 public record UpdateSingerDto(string BadgeName, string FirstName, string LastName, string Part, string Email, string Status);
 public record UpdateSingerStatusDto(string Status);
 public record SetSongsDto(List<string> Titles);
+public record SendSingerEmailsDto(string Singers, string Subject, string Body);

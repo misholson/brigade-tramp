@@ -164,6 +164,12 @@ export default function AdminPage() {
   const [songsModal, setSongsModal] = useState<{ eventId: number; text: string } | null>(null);
   const [songsSaving, setSongsSaving] = useState(false);
 
+  const [emailModal, setEmailModal] = useState<{ eventId: number; eventName: string } | null>(null);
+  const [emailSingers, setEmailSingers] = useState<'All' | 'ActiveOnly' | 'NonOptional'>('ActiveOnly');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sendingEmails, setSendingEmails] = useState(false);
+
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
   const openCreateEvent = () => {
@@ -254,6 +260,32 @@ export default function AdminPage() {
     setEditSingerForm(null);
   };
 
+  const openEmailModal = (ev: import('../types').EventWithSingersDto) => {
+    setEmailSingers('ActiveOnly');
+    setEmailSubject('');
+    setEmailBody('');
+    setEmailModal({ eventId: ev.id, eventName: ev.name });
+  };
+
+  const handleSendEmails = async () => {
+    if (!emailModal) return;
+    setSendingEmails(true);
+    try {
+      const res = await fetch(`${BASE_URL}/events/${emailModal.eventId}/send-emails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Basic ${credentials ?? ''}` },
+        body: JSON.stringify({ singers: emailSingers, subject: emailSubject, body: emailBody }),
+      });
+      if (!res.ok) {
+        alert('Failed to send emails. Check that ACS is configured on the server.');
+        return;
+      }
+      setEmailModal(null);
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
   return (
     <Container>
       <Header>
@@ -283,6 +315,7 @@ export default function AdminPage() {
           onEditSinger={openEditSinger}
           onContests={id => navigate(`/contests?eventId=${id}`)}
           onSongs={openSongs}
+          onEmail={openEmailModal}
         />
       ))}
 
@@ -415,6 +448,55 @@ export default function AdminPage() {
               <Btn $variant="secondary" onClick={() => setSongsModal(null)}>Cancel</Btn>
               <Btn $variant="primary" onClick={handleSaveSongs} disabled={songsSaving}>
                 {songsSaving ? 'Saving…' : 'Save'}
+              </Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {/* Email singers modal */}
+      {emailModal && (
+        <Overlay onClick={() => setEmailModal(null)}>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Email Singers</ModalTitle>
+            <Field>
+              <Label htmlFor="email-singers">Singers</Label>
+              <Select
+                id="email-singers"
+                value={emailSingers}
+                onChange={e => setEmailSingers(e.target.value as 'All' | 'ActiveOnly' | 'NonOptional')}
+              >
+                <option value="All">All</option>
+                <option value="ActiveOnly">Active only</option>
+                <option value="NonOptional">All non-optional</option>
+              </Select>
+            </Field>
+            <Field>
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input
+                id="email-subject"
+                autoFocus
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+              />
+              <Hint>Event name will be prepended in square brackets, e.g. [{emailModal.eventName}] Your Subject</Hint>
+            </Field>
+            <Field>
+              <Label htmlFor="email-body">Body</Label>
+              <Textarea
+                id="email-body"
+                value={emailBody}
+                onChange={e => setEmailBody(e.target.value)}
+              />
+            </Field>
+            <ModalActions>
+              <Btn $variant="secondary" onClick={() => setEmailModal(null)}>Cancel</Btn>
+              <Btn
+                $variant="primary"
+                disabled={sendingEmails || !emailSubject.trim() || !emailBody.trim()}
+                onClick={handleSendEmails}
+              >
+                {sendingEmails ? 'Sending…' : 'Send Emails'}
               </Btn>
             </ModalActions>
           </ModalBox>

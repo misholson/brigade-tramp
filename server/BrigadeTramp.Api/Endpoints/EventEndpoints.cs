@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.DTOs;
 using BrigadeTramp.Api.Models;
+using BrigadeTramp.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace BrigadeTramp.Api.Endpoints;
@@ -54,6 +55,30 @@ public static class EventEndpoints
             db.Events.Remove(ev);
             await db.SaveChangesAsync();
             return Results.NoContent();
+        });
+
+        group.MapPost("/{id:int}/send-emails", async (int id, SendSingerEmailsDto dto, AppDbContext db, EmailService emailService) =>
+        {
+            var ev = await db.Events.Include(e => e.Singers).FirstOrDefaultAsync(e => e.Id == id);
+            if (ev is null) return Results.NotFound();
+
+            IEnumerable<Singer> singers = dto.Singers switch
+            {
+                "ActiveOnly" => ev.Singers.Where(s => s.Status == SingerStatus.Active),
+                "NonOptional" => ev.Singers.Where(s => s.Status != SingerStatus.Optional),
+                _ => ev.Singers,
+            };
+
+            var addresses = singers
+                .Select(s => s.Email)
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .Distinct()
+                .ToList();
+
+            var subject = $"[{ev.Name}] {dto.Subject}";
+            await emailService.SendAsync(addresses, subject, dto.Body);
+
+            return Results.Ok();
         });
 
         group.MapPost("/{id:int}/singers", async (int id, AddSingerDto dto, AppDbContext db) =>
