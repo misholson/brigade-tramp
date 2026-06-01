@@ -20,7 +20,7 @@ public static class ContestEndpoints
             var ev = await db.Events.FindAsync(id);
             if (ev is null) return Results.NotFound();
 
-            var showScores = AuthHelpers.CanManageContest(ctx.User, id);
+            var showScores = AuthHelpers.HasEventRole(ctx.User, id, EventRole.ContestAdmin);
 
             var contests = await db.Contests
                 .Where(c => c.EventId == id)
