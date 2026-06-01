@@ -425,12 +425,18 @@ Services/EmailService.cs
  microsoft.openapi/2.0.0/lib/net8.0/Microsoft.OpenApi.dll
  microsoft.sqlserver.server/1.0.0/lib/netstandard2.0/Microsoft.SqlServer.Server.dll
  microsoft.win32.systemevents/6.0.0/lib/net6.0/Microsoft.Win32.SystemEvents.dll
- pdfsharpcore/1.3.67/lib/net8.0/PdfSharpCore.dll
+ pdfsharp/6.2.4/lib/net10.0/
+  PdfSharp.BarCodes.dll
+  PdfSharp.Charting.dll
+  PdfSharp.Cryptography.dll
+  PdfSharp.dll
+  PdfSharp.Quality.dll
+  PdfSharp.Shared.dll
+  PdfSharp.Snippets.dll
+  PdfSharp.System.dll
+  PdfSharp.WPFonts.dll
  qrcoder/1.8.0/lib/net6.0/QRCoder.dll
  scalar.aspnetcore/2.14.11/lib/net10.0/Scalar.AspNetCore.dll
- sharpziplib/1.4.2/lib/net6.0/ICSharpCode.SharpZipLib.dll
- sixlabors.fonts/1.0.0-beta17/lib/netcoreapp3.1/SixLabors.Fonts.dll
- sixlabors.imagesharp/1.0.4/lib/netcoreapp3.1/SixLabors.ImageSharp.dll
  sqlitepclraw.bundle_e_sqlite3/2.1.11/lib/netstandard2.0/SQLitePCLRaw.batteries_v2.dll
  sqlitepclraw.core/2.1.11/lib/netstandard2.0/SQLitePCLRaw.core.dll
  sqlitepclraw.provider.e_sqlite3/2.1.11/lib/net6.0/SQLitePCLRaw.provider.e_sqlite3.dll

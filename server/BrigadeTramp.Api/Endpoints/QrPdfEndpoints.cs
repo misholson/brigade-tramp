@@ -1,7 +1,7 @@
 using BrigadeTramp.Api.Data;
 using Microsoft.EntityFrameworkCore;
-using PdfSharpCore.Drawing;
-using PdfSharpCore.Pdf;
+using PdfSharp.Drawing;
+using PdfSharp.Pdf;
 using QRCoder;
 
 namespace BrigadeTramp.Api.Endpoints;
@@ -30,7 +30,7 @@ public static class QrPdfEndpoints
             for (int pageStart = 0; pageStart < singers.Count; pageStart += perPage)
             {
                 var page = pdf.AddPage();
-                page.Size = PdfSharpCore.PageSize.A4;
+                page.Size = PdfSharp.PageSize.A4;
                 var gfx = XGraphics.FromPdfPage(page);
 
                 double marginX = 20;
@@ -52,9 +52,11 @@ public static class QrPdfEndpoints
 
                     var url = $"{baseUrl}/singer/{singer.Code}";
                     var qrData = new QRCodeGenerator().CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
-                    var pngBytes = new PngByteQRCode(qrData).GetGraphic(5);
+                    var pngBytes = new PngByteQRCode(qrData).GetGraphic(5,
+                        new byte[] { 0, 0, 0, 255 },
+                        new byte[] { 255, 255, 255, 255 });
 
-                    var xImage = XImage.FromStream(() => new MemoryStream(pngBytes));
+                    var xImage = XImage.FromStream(new MemoryStream(pngBytes));
                     double padding = 6;
                     double qrSize = Math.Min(cellWidth, cellHeight * 0.72) - 2 * padding;
                     double qrX = cellX + (cellWidth - qrSize) / 2;
@@ -62,8 +64,8 @@ public static class QrPdfEndpoints
 
                     gfx.DrawImage(xImage, qrX, qrY, qrSize, qrSize);
 
-                    var boldFont = new XFont("Helvetica", 9, XFontStyle.Bold);
-                    var normalFont = new XFont("Helvetica", 8, XFontStyle.Regular);
+                    var boldFont = new XFont("Arial", 9, XFontStyleEx.Bold);
+                    var normalFont = new XFont("Arial", 8, XFontStyleEx.Regular);
 
                     double textY = qrY + qrSize + 3;
                     gfx.DrawString(singer.BadgeName, boldFont, XBrushes.Black,

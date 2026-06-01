@@ -3,7 +3,10 @@ using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.Endpoints;
 using BrigadeTramp.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using PdfSharp.Fonts;
 using Scalar.AspNetCore;
+
+GlobalFontSettings.UseWindowsFontsUnderWindows = true;
 
 var builder = WebApplication.CreateBuilder(args);
 
