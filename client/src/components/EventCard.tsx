@@ -143,7 +143,9 @@ export default function EventCard({ event, onEdit, onDelete, onImport, onDownloa
       <CardHeader onClick={() => setExpanded(e => !e)}>
         <EventInfo>
           <EventName>{event.name} {expanded ? '▲' : '▼'}</EventName>
-          <EventDate>{event.date} · {event.singers.length} singers</EventDate>
+          <EventDate>
+            {event.date}{event.endDate ? ` – ${event.endDate}` : ''} · {event.singers.length} singers
+          </EventDate>
         </EventInfo>
         <Actions onClick={e => e.stopPropagation()}>
           <Btn $variant="secondary" onClick={() => onEdit(event)}>Edit</Btn>

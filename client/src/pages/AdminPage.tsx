@@ -134,7 +134,15 @@ const StatusMsg = styled.div`
   color: ${p => p.theme.colors.textMuted};
 `;
 
-interface EventFormState { name: string; date: string; allowBusyBee: boolean; emailFooter: string; }
+interface EventFormState { name: string; date: string; endDate: string; allowBusyBee: boolean; emailFooter: string; }
+
+function nextSunday(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const daysToAdd = dt.getDay() === 0 ? 7 : 7 - dt.getDay();
+  dt.setDate(dt.getDate() + daysToAdd);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
 interface SingerFormState {
   eventId: number;
   badgeName: string;
@@ -157,7 +165,7 @@ export default function AdminPage() {
 
   const [editEvent, setEditEvent] = useState<EventWithSingersDto | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
-  const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '', allowBusyBee: false, emailFooter: '' });
+  const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '', endDate: '', allowBusyBee: false, emailFooter: '' });
 
   const [singerForm, setSingerForm] = useState<SingerFormState | null>(null);
   const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number }) | null>(null);
@@ -173,12 +181,12 @@ export default function AdminPage() {
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
   const openCreateEvent = () => {
-    setEventForm({ name: '', date: '', allowBusyBee: false, emailFooter: '' });
+    setEventForm({ name: '', date: '', endDate: '', allowBusyBee: false, emailFooter: '' });
     setIsCreatingEvent(true);
   };
 
   const openEditEvent = (ev: EventWithSingersDto) => {
-    setEventForm({ name: ev.name, date: ev.date, allowBusyBee: ev.allowBusyBee, emailFooter: ev.emailFooter });
+    setEventForm({ name: ev.name, date: ev.date, endDate: ev.endDate ?? '', allowBusyBee: ev.allowBusyBee, emailFooter: ev.emailFooter });
     setEditEvent(ev);
   };
 
@@ -188,10 +196,11 @@ export default function AdminPage() {
   };
 
   const handleSaveEvent = () => {
+    const endDate = eventForm.endDate || null;
     if (editEvent) {
-      dispatch(updateEvent({ id: editEvent.id, name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee, emailFooter: eventForm.emailFooter }));
+      dispatch(updateEvent({ id: editEvent.id, name: eventForm.name, date: eventForm.date, endDate, allowBusyBee: eventForm.allowBusyBee, emailFooter: eventForm.emailFooter }));
     } else {
-      dispatch(createEvent({ name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee, emailFooter: eventForm.emailFooter }));
+      dispatch(createEvent({ name: eventForm.name, date: eventForm.date, endDate, allowBusyBee: eventForm.allowBusyBee, emailFooter: eventForm.emailFooter }));
     }
     closeEventModal();
   };
@@ -334,12 +343,24 @@ export default function AdminPage() {
               />
             </Field>
             <Field>
-              <Label htmlFor="ev-date">Date</Label>
+              <Label htmlFor="ev-date">Start Date</Label>
               <Input
                 id="ev-date"
                 type="date"
                 value={eventForm.date}
-                onChange={e => setEventForm(f => ({ ...f, date: e.target.value }))}
+                onChange={e => {
+                  const date = e.target.value;
+                  setEventForm(f => ({ ...f, date, endDate: date ? nextSunday(date) : '' }));
+                }}
+              />
+            </Field>
+            <Field>
+              <Label htmlFor="ev-end-date">End Date</Label>
+              <Input
+                id="ev-end-date"
+                type="date"
+                value={eventForm.endDate}
+                onChange={e => setEventForm(f => ({ ...f, endDate: e.target.value }))}
               />
             </Field>
             <Field>
