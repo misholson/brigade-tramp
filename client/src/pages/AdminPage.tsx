@@ -231,6 +231,15 @@ export default function AdminPage() {
   const [roleAdding, setRoleAdding] = useState(false);
   const [roleEmailSending, setRoleEmailSending] = useState(false);
 
+  const [siteAdminModal, setSiteAdminModal] = useState(false);
+  const [siteAdmins, setSiteAdmins] = useState<{ id: number; email: string; name: string }[]>([]);
+  const [siteAdminLoading, setSiteAdminLoading] = useState(false);
+  const [siteAdminSearch, setSiteAdminSearch] = useState('');
+  const [siteAdminSearchResults, setSiteAdminSearchResults] = useState<{ id: number; email: string; name: string }[]>([]);
+  const [siteAdminSearching, setSiteAdminSearching] = useState(false);
+  const [siteAdminSearchDone, setSiteAdminSearchDone] = useState(false);
+  const [selectedSiteAdminUser, setSelectedSiteAdminUser] = useState<{ id: number; email: string; name: string } | null>(null);
+
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
   const openCreateEvent = () => {
@@ -425,6 +434,70 @@ export default function AdminPage() {
       body: JSON.stringify({ userId: item.userId, eventId: rolesModal.eventId, role: item.role }),
     });
     setEventRoles(prev => prev.filter(r => !(r.userId === item.userId && r.role === item.role)));
+  };
+
+  const openSiteAdminModal = async () => {
+    setSiteAdminModal(true);
+    setSiteAdminSearch('');
+    setSiteAdminSearchResults([]);
+    setSiteAdminSearchDone(false);
+    setSelectedSiteAdminUser(null);
+    setSiteAdminLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/users`, {
+        headers: { Authorization: `Bearer ${token ?? ''}` },
+      });
+      if (res.ok) {
+        const all: { id: number; email: string; name: string; isSiteAdmin: boolean }[] = await res.json();
+        setSiteAdmins(all.filter(u => u.isSiteAdmin));
+      }
+    } finally {
+      setSiteAdminLoading(false);
+    }
+  };
+
+  const handleSiteAdminSearch = async (q: string) => {
+    setSiteAdminSearch(q);
+    setSelectedSiteAdminUser(null);
+    setSiteAdminSearchDone(false);
+    if (q.length < 2) { setSiteAdminSearchResults([]); return; }
+    setSiteAdminSearching(true);
+    try {
+      const res = await fetch(`${BASE_URL}/users/search?email=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${token ?? ''}` },
+      });
+      if (res.ok) setSiteAdminSearchResults(await res.json());
+    } finally {
+      setSiteAdminSearching(false);
+      setSiteAdminSearchDone(true);
+    }
+  };
+
+  const handleAddSiteAdmin = async () => {
+    if (!selectedSiteAdminUser) return;
+    await fetch(`${BASE_URL}/users/${selectedSiteAdminUser.id}/site-admin`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+      body: JSON.stringify({ isSiteAdmin: true }),
+    });
+    setSiteAdmins(prev =>
+      prev.some(u => u.id === selectedSiteAdminUser.id)
+        ? prev
+        : [...prev, selectedSiteAdminUser]
+    );
+    setSiteAdminSearch('');
+    setSiteAdminSearchResults([]);
+    setSiteAdminSearchDone(false);
+    setSelectedSiteAdminUser(null);
+  };
+
+  const handleRemoveSiteAdmin = async (id: number) => {
+    await fetch(`${BASE_URL}/users/${id}/site-admin`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+      body: JSON.stringify({ isSiteAdmin: false }),
+    });
+    setSiteAdmins(prev => prev.filter(u => u.id !== id));
   };
 
   const handleSendEmails = async () => {
@@ -774,6 +847,81 @@ export default function AdminPage() {
 
             <ModalActions>
               <Btn $variant="secondary" onClick={() => setRolesModal(null)}>Close</Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {/* Site admin management button */}
+      {isSiteAdmin && (
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <Btn $variant="secondary" onClick={openSiteAdminModal}>Manage Site Admins</Btn>
+        </div>
+      )}
+
+      {/* Site admin modal */}
+      {siteAdminModal && (
+        <Overlay onClick={() => setSiteAdminModal(false)}>
+          <ModalBox onClick={e => e.stopPropagation()} style={{ width: '480px' }}>
+            <ModalTitle>Site Admins</ModalTitle>
+
+            {siteAdminLoading ? (
+              <StatusMsg>Loading…</StatusMsg>
+            ) : siteAdmins.length === 0 ? (
+              <StatusMsg style={{ padding: '0 0 16px' }}>No site admins yet.</StatusMsg>
+            ) : (
+              <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {siteAdmins.map(u => (
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.88rem' }}>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <strong>{u.name || u.email}</strong>
+                      {u.name && <Label as="span" style={{ marginLeft: 6, fontWeight: 400 }}>{u.email}</Label>}
+                    </span>
+                    <Btn $variant="danger" style={{ padding: '3px 8px', fontSize: '0.75rem' }} disabled={siteAdmins.length <= 1} onClick={() => handleRemoveSiteAdmin(u.id)}>Remove</Btn>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <RolesDivider>
+              <Label as="div">Add Site Admin</Label>
+              <div style={{ position: 'relative' }}>
+                <Input
+                  placeholder="Search by email…"
+                  value={siteAdminSearch}
+                  onChange={e => handleSiteAdminSearch(e.target.value)}
+                  autoComplete="off"
+                  autoFocus
+                />
+                {selectedSiteAdminUser && (
+                  <Hint>Selected: {selectedSiteAdminUser.name || selectedSiteAdminUser.email}</Hint>
+                )}
+                {siteAdminSearchDone && !selectedSiteAdminUser && siteAdminSearchResults.length === 0 && (
+                  <Hint>No users found.</Hint>
+                )}
+                {siteAdminSearching && (
+                  <SearchDropdown style={{ padding: '6px 10px' }}>
+                    <Label as="span">Searching…</Label>
+                  </SearchDropdown>
+                )}
+                {!siteAdminSearching && siteAdminSearchResults.length > 0 && (
+                  <SearchDropdown>
+                    {siteAdminSearchResults.map(u => (
+                      <SearchDropdownItem key={u.id} onMouseDown={() => { setSelectedSiteAdminUser(u); setSiteAdminSearch(u.email); setSiteAdminSearchResults([]); setSiteAdminSearchDone(false); }}>
+                        <strong>{u.name}</strong>
+                        <Label as="span" style={{ marginLeft: 6, fontWeight: 400 }}>{u.email}</Label>
+                      </SearchDropdownItem>
+                    ))}
+                  </SearchDropdown>
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Btn $variant="primary" disabled={!selectedSiteAdminUser} onClick={handleAddSiteAdmin}>Add</Btn>
+              </div>
+            </RolesDivider>
+
+            <ModalActions>
+              <Btn $variant="secondary" onClick={() => setSiteAdminModal(false)}>Close</Btn>
             </ModalActions>
           </ModalBox>
         </Overlay>
