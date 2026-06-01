@@ -1,7 +1,14 @@
 import { Navigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppDispatch';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAppSelector(s => s.auth.isAuthenticated);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+interface Props {
+  children: React.ReactNode;
+  requireSiteAdmin?: boolean;
+}
+
+export default function ProtectedRoute({ children, requireSiteAdmin }: Props) {
+  const { isAuthenticated, user } = useAppSelector(s => s.auth);
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (requireSiteAdmin && !user?.isSiteAdmin) return <Navigate to="/my-events" replace />;
+  return <>{children}</>;
 }

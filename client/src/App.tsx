@@ -7,11 +7,18 @@ import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import ImportPage from './pages/ImportPage';
 import ContestsPage from './pages/ContestsPage';
+import SingerLandingPage from './pages/SingerLandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useAppSelector } from './hooks/useAppDispatch';
 
 const GlobalStyle = createGlobalStyle`
   body { background: ${p => p.theme.colors.pageBg}; color: ${p => p.theme.colors.text}; }
 `;
+
+function RootRedirect() {
+  const isAuthenticated = useAppSelector(s => s.auth.isAuthenticated);
+  return <Navigate to={isAuthenticated ? '/my-events' : '/login'} replace />;
+}
 
 export default function App() {
   const [isDark, setIsDark] = useState(
@@ -34,6 +41,11 @@ export default function App() {
         <Routes>
           <Route path="/singer/:code" element={<MainPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/my-events" element={
+            <ProtectedRoute>
+              <SingerLandingPage />
+            </ProtectedRoute>
+          } />
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminPage />
@@ -49,7 +61,7 @@ export default function App() {
               <ContestsPage />
             </ProtectedRoute>
           } />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<RootRedirect />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

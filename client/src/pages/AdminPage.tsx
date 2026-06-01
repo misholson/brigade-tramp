@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
 import { fetchEvents, createEvent, updateEvent, deleteEvent, addSinger, editSinger } from '../store/adminSlice';
-import { clearCredentials } from '../store/authSlice';
+import { clearAuth, selectIsSiteAdmin } from '../store/authSlice';
 import type { EventWithSingersDto, SingerDto } from '../types';
 import EventCard from '../components/EventCard';
 import { BASE_URL } from '../api/apiClient';
@@ -161,7 +161,8 @@ export default function AdminPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { events, status } = useAppSelector(s => s.admin);
-  const credentials = useAppSelector(s => s.auth.credentials);
+  const token = useAppSelector(s => s.auth.token);
+  const isSiteAdmin = useAppSelector(selectIsSiteAdmin);
 
   const [editEvent, setEditEvent] = useState<EventWithSingersDto | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
@@ -211,7 +212,7 @@ export default function AdminPage() {
 
   const handleDownloadPdf = async (id: number) => {
     const res = await fetch(`${BASE_URL}/events/${id}/qr-pdf?origin=${encodeURIComponent(window.location.origin)}`, {
-      headers: { Authorization: `Basic ${credentials ?? ''}` },
+      headers: { Authorization: `Bearer ${token ?? ''}` },
     });
     if (!res.ok) { alert('Failed to generate PDF'); return; }
     const blob = await res.blob();
@@ -244,7 +245,7 @@ export default function AdminPage() {
 
   const openSongs = async (eventId: number) => {
     const res = await fetch(`${BASE_URL}/events/${eventId}/songs`, {
-      headers: { Authorization: `Basic ${credentials ?? ''}` },
+      headers: { Authorization: `Bearer ${token ?? ''}` },
     });
     const titles: string[] = res.ok ? await res.json() : [];
     setSongsModal({ eventId, text: titles.join('\n') });
@@ -256,7 +257,7 @@ export default function AdminPage() {
     const titles = songsModal.text.split('\n').map(t => t.trim()).filter(Boolean);
     await fetch(`${BASE_URL}/events/${songsModal.eventId}/songs`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Basic ${credentials ?? ''}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
       body: JSON.stringify({ titles }),
     });
     setSongsSaving(false);
@@ -282,7 +283,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${BASE_URL}/events/${emailModal.eventId}/send-emails`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Basic ${credentials ?? ''}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
         body: JSON.stringify({ singers: emailSingers, subject: emailSubject, body: emailBody }),
       });
       if (!res.ok) {
@@ -300,8 +301,8 @@ export default function AdminPage() {
       <Header>
         <Title>Events</Title>
         <TopActions>
-          <Btn $variant="primary" onClick={openCreateEvent}>+ New Event</Btn>
-          <Btn $variant="danger" onClick={() => { dispatch(clearCredentials()); navigate('/login'); }}>
+          {isSiteAdmin && <Btn $variant="primary" onClick={openCreateEvent}>+ New Event</Btn>}
+          <Btn $variant="danger" onClick={() => { dispatch(clearAuth()); navigate('/login'); }}>
             Logout
           </Btn>
         </TopActions>
@@ -325,6 +326,7 @@ export default function AdminPage() {
           onContests={id => navigate(`/contests?eventId=${id}`)}
           onSongs={openSongs}
           onEmail={openEmailModal}
+          canDelete={isSiteAdmin}
         />
       ))}
 

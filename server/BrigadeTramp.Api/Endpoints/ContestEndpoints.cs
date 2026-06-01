@@ -1,3 +1,4 @@
+using BrigadeTramp.Api.Auth;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.DTOs;
 using BrigadeTramp.Api.Models;
@@ -12,10 +13,14 @@ public static class ContestEndpoints
 
     public static void MapContestEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/events/{id:int}/contests", async (int id, AppDbContext db) =>
+        app.MapGet("/api/events/{id:int}/contests", async (int id, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanViewEvent(ctx.User, id)) return Results.Forbid();
+
             var ev = await db.Events.FindAsync(id);
             if (ev is null) return Results.NotFound();
+
+            var showScores = AuthHelpers.CanManageContest(ctx.User, id);
 
             var contests = await db.Contests
                 .Where(c => c.EventId == id)
@@ -25,44 +30,53 @@ public static class ContestEndpoints
                 .OrderBy(c => c.Id)
                 .ToListAsync();
 
-            return Results.Ok(new ContestsPageDto(ev.Name, contests.Select(ToDto).ToList()));
+            return Results.Ok(new ContestsPageDto(ev.Name, contests.Select(c => ToDto(c, showScores)).ToList(), showScores));
         }).RequireAuthorization();
 
-        app.MapPost("/api/events/{id:int}/contests", async (int id, CreateContestDto dto, AppDbContext db) =>
+        app.MapPost("/api/events/{id:int}/contests", async (int id, CreateContestDto dto, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanManageContest(ctx.User, id) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
+
             var ev = await db.Events.FindAsync(id);
             if (ev is null) return Results.NotFound();
 
             var contest = new Contest { Name = dto.Name, EventId = id };
             db.Contests.Add(contest);
             await db.SaveChangesAsync();
-            return Results.Created($"/api/contests/{contest.Id}", ToDto(contest));
+            return Results.Created($"/api/contests/{contest.Id}", ToDto(contest, true));
         }).RequireAuthorization();
 
-        app.MapPut("/api/contests/{id:int}", async (int id, UpdateContestDto dto, AppDbContext db) =>
+        app.MapPut("/api/contests/{id:int}", async (int id, UpdateContestDto dto, AppDbContext db, HttpContext ctx) =>
         {
             var contest = await db.Contests.FindAsync(id);
             if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
             contest.Name = dto.Name;
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
 
-        app.MapDelete("/api/contests/{id:int}", async (int id, AppDbContext db) =>
+        app.MapDelete("/api/contests/{id:int}", async (int id, AppDbContext db, HttpContext ctx) =>
         {
             var contest = await db.Contests.FindAsync(id);
             if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
             db.Contests.Remove(contest);
             await db.SaveChangesAsync();
             return Results.NoContent();
         }).RequireAuthorization();
 
-        app.MapPost("/api/contests/{id:int}/generate", async (int id, AppDbContext db) =>
+        app.MapPost("/api/contests/{id:int}/generate", async (int id, AppDbContext db, HttpContext ctx) =>
         {
             var contest = await db.Contests
                 .Include(c => c.Quartets).ThenInclude(q => q.SingerLinks)
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
 
             var singers = await db.Singers
                 .Where(s => s.EventId == contest.EventId && s.Status != SingerStatus.Inactive && s.Status != SingerStatus.Optional)
@@ -71,8 +85,6 @@ public static class ContestEndpoints
             var byPart = Enum.GetValues<Part>()
                 .ToDictionary(p => p, p => singers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList());
 
-            // Create a second shuffled list of singers to accomodate the second quartet if someone needs to be in more
-            // than one.
             var byPart2 = Enum.GetValues<Part>()
                 .ToDictionary(p => p, p => singers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList());
 
@@ -115,11 +127,7 @@ public static class ContestEndpoints
                 Enumerable.Range(0, numQuartets).Select(i => {
                     List<Singer> partSingers = kv.Value;
                     if (i >= partSingers.Count)
-                    {
-                        // If there are more quartets than singers in this part,
-                        // go to the second shuffled list of singers.
                         partSingers = byPart2[kv.Key];
-                    }
                     return new ContestQuartetSinger
                     {
                         QuartetId = quartets[i].Id,
@@ -132,42 +140,54 @@ public static class ContestEndpoints
             var updated = await db.Contests
                 .Include(c => c.Quartets).ThenInclude(q => q.SingerLinks).ThenInclude(sl => sl.Singer)
                 .FirstAsync(c => c.Id == id);
-            return Results.Ok(ToDto(updated));
+            return Results.Ok(ToDto(updated, true));
         }).RequireAuthorization();
 
-        app.MapPatch("/api/quartets/{id:int}/name", async (int id, SetQuartetNameDto dto, AppDbContext db) =>
+        app.MapPatch("/api/quartets/{id:int}/name", async (int id, SetQuartetNameDto dto, AppDbContext db, HttpContext ctx) =>
         {
             var quartet = await db.ContestQuartets.FindAsync(id);
             if (quartet is null) return Results.NotFound();
+            var contest = await db.Contests.FindAsync(quartet.ContestId);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
             quartet.Name = dto.Name;
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
 
-        app.MapPatch("/api/quartets/{id:int}/score", async (int id, SetQuartetScoreDto dto, AppDbContext db) =>
+        app.MapPatch("/api/quartets/{id:int}/score", async (int id, SetQuartetScoreDto dto, AppDbContext db, HttpContext ctx) =>
         {
             var quartet = await db.ContestQuartets.FindAsync(id);
             if (quartet is null) return Results.NotFound();
+            var contest = await db.Contests.FindAsync(quartet.ContestId);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId)) return Results.Forbid();
             quartet.Score = dto.Score;
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
 
-        app.MapPatch("/api/quartets/{id:int}/score2", async (int id, SetQuartetScore2Dto dto, AppDbContext db) =>
+        app.MapPatch("/api/quartets/{id:int}/score2", async (int id, SetQuartetScore2Dto dto, AppDbContext db, HttpContext ctx) =>
         {
             var quartet = await db.ContestQuartets.FindAsync(id);
             if (quartet is null) return Results.NotFound();
+            var contest = await db.Contests.FindAsync(quartet.ContestId);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId)) return Results.Forbid();
             quartet.Score2 = dto.Score2;
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
 
-        app.MapPost("/api/contests/{id:int}/prepare-round2", async (int id, PrepareRound2Dto dto, AppDbContext db) =>
+        app.MapPost("/api/contests/{id:int}/prepare-round2", async (int id, PrepareRound2Dto dto, AppDbContext db, HttpContext ctx) =>
         {
             var contest = await db.Contests
                 .Include(c => c.Quartets)
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
 
             contest.Round2Count = dto.Count;
 
@@ -206,8 +226,12 @@ public static class ContestEndpoints
             return Results.Ok();
         }).RequireAuthorization();
 
-        app.MapPost("/api/contests/{id:int}/reorder", async (int id, ReorderContestDto dto, AppDbContext db) =>
+        app.MapPost("/api/contests/{id:int}/reorder", async (int id, ReorderContestDto dto, AppDbContext db, HttpContext ctx) =>
         {
+            var contest = await db.Contests.FindAsync(id);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
             var quartets = await db.ContestQuartets.Where(q => q.ContestId == id).ToListAsync();
             for (int i = 0; i < dto.Ids.Count; i++)
             {
@@ -218,8 +242,12 @@ public static class ContestEndpoints
             return Results.Ok();
         }).RequireAuthorization();
 
-        app.MapPost("/api/contests/{id:int}/reorder2", async (int id, ReorderContestDto dto, AppDbContext db) =>
+        app.MapPost("/api/contests/{id:int}/reorder2", async (int id, ReorderContestDto dto, AppDbContext db, HttpContext ctx) =>
         {
+            var contest = await db.Contests.FindAsync(id);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
             var quartets = await db.ContestQuartets.Where(q => q.ContestId == id).ToListAsync();
             foreach (var quartet in quartets) quartet.SortOrder2 = 0;
             for (int i = 0; i < dto.Ids.Count; i++)
@@ -231,7 +259,7 @@ public static class ContestEndpoints
             return Results.Ok();
         }).RequireAuthorization();
 
-        app.MapPost("/api/contests/{id:int}/send-emails", async (int id, SendEmailsDto dto, AppDbContext db, EmailService emailService) =>
+        app.MapPost("/api/contests/{id:int}/send-emails", async (int id, SendEmailsDto dto, AppDbContext db, HttpContext ctx, EmailService emailService) =>
         {
             var contest = await db.Contests
                 .Include(c => c.Quartets)
@@ -239,6 +267,7 @@ public static class ContestEndpoints
                         .ThenInclude(sl => sl.Singer)
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanViewEvent(ctx.User, contest.EventId)) return Results.Forbid();
 
             var ev = await db.Events.FindAsync(contest.EventId);
             if (ev is null) return Results.NotFound();
@@ -311,12 +340,15 @@ public static class ContestEndpoints
         });
     }
 
-    static ContestDto ToDto(Contest c) => new(
+    static ContestDto ToDto(Contest c, bool showScores) => new(
         c.Id, c.Name, c.EventId, c.Round2Count,
         c.Quartets
             .OrderBy(q => q.SortOrder)
             .Select(q => new ContestQuartetDto(
-                q.Id, q.Name, q.Score, q.Score2, q.SongTitle, q.Song2Title, q.SortOrder2,
+                q.Id, q.Name,
+                showScores ? q.Score : null,
+                showScores ? q.Score2 : null,
+                q.SongTitle, q.Song2Title, q.SortOrder2,
                 q.SingerLinks
                     .Select(sl => new ContestSingerDto(
                         sl.Singer.Id, sl.Singer.BadgeName, sl.Singer.FirstName, sl.Singer.LastName, sl.Singer.Part.ToString()))

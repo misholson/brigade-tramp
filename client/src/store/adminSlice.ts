@@ -7,7 +7,7 @@ export const fetchEvents = createAsyncThunk(
   'admin/fetchEvents',
   async (_, { getState }) => {
     const { auth } = getState() as RootState;
-    return createApiClient(auth.credentials).get<EventWithSingersDto[]>('/events');
+    return createApiClient(auth.token).get<EventWithSingersDto[]>('/events');
   }
 );
 
@@ -15,7 +15,7 @@ export const createEvent = createAsyncThunk(
   'admin/createEvent',
   async (dto: { name: string; date: string; endDate: string | null; allowBusyBee: boolean; emailFooter: string }, { getState, dispatch }) => {
     const { auth } = getState() as RootState;
-    await createApiClient(auth.credentials).post('/events', dto);
+    await createApiClient(auth.token).post('/events', dto);
     dispatch(fetchEvents());
   }
 );
@@ -24,7 +24,7 @@ export const updateEvent = createAsyncThunk(
   'admin/updateEvent',
   async ({ id, name, date, endDate, allowBusyBee, emailFooter }: { id: number; name: string; date: string; endDate: string | null; allowBusyBee: boolean; emailFooter: string }, { getState, dispatch }) => {
     const { auth } = getState() as RootState;
-    await createApiClient(auth.credentials).put(`/events/${id}`, { name, date, endDate, allowBusyBee, emailFooter });
+    await createApiClient(auth.token).put(`/events/${id}`, { name, date, endDate, allowBusyBee, emailFooter });
     dispatch(fetchEvents());
   }
 );
@@ -33,7 +33,7 @@ export const deleteEvent = createAsyncThunk(
   'admin/deleteEvent',
   async (id: number, { getState, dispatch }) => {
     const { auth } = getState() as RootState;
-    await createApiClient(auth.credentials).delete(`/events/${id}`);
+    await createApiClient(auth.token).delete(`/events/${id}`);
     dispatch(fetchEvents());
   }
 );
@@ -46,7 +46,7 @@ export const addSinger = createAsyncThunk(
   ) => {
     const { auth } = getState() as RootState;
     const { eventId, ...body } = dto;
-    await createApiClient(auth.credentials).post(`/events/${eventId}/singers`, body);
+    await createApiClient(auth.token).post(`/events/${eventId}/singers`, body);
     dispatch(fetchEvents());
   }
 );
@@ -59,7 +59,7 @@ export const editSinger = createAsyncThunk(
   ) => {
     const { auth } = getState() as RootState;
     const { singerId, ...body } = dto;
-    await createApiClient(auth.credentials).put(`/singers/${singerId}`, body);
+    await createApiClient(auth.token).put(`/singers/${singerId}`, body);
     dispatch(fetchEvents());
   }
 );
@@ -68,7 +68,7 @@ export const updateSingerStatus = createAsyncThunk(
   'admin/updateSingerStatus',
   async ({ singerId, status }: { singerId: number; status: string }, { getState, dispatch }) => {
     const { auth } = getState() as RootState;
-    await createApiClient(auth.credentials).patch(`/singers/${singerId}/status`, { status });
+    await createApiClient(auth.token).patch(`/singers/${singerId}/status`, { status });
     dispatch(fetchEvents());
   }
 );

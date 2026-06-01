@@ -1,8 +1,11 @@
-using BrigadeTramp.Api.Auth;
+using System.Text;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.Endpoints;
+using BrigadeTramp.Api.Models;
 using BrigadeTramp.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PdfSharp.Fonts;
 using Scalar.AspNetCore;
 
@@ -20,11 +23,25 @@ builder.Services.AddDbContext<AppDbContext>(opts =>
     else opts.UseSqlServer(connStr);
 });
 
-builder.Services.AddAuthentication("BasicAuth")
-    .AddScheme<BasicAuthOptions, BasicAuthHandler>("BasicAuth", null);
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!);
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+        };
+    });
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<EmailService>();
+builder.Services.AddSingleton<JwtService>();
 
 builder.Services.AddOpenApi();
 
@@ -94,6 +111,30 @@ using (var scope = app.Services.CreateScope())
         try { db.Database.ExecuteSqlRaw(sql); }
         catch { /* column already exists */ }
     }
+
+    var userPatches = isSqlite
+        ? new[]
+        {
+            "CREATE TABLE IF NOT EXISTS Users (Id INTEGER PRIMARY KEY AUTOINCREMENT, Email TEXT NOT NULL DEFAULT '', Name TEXT NOT NULL DEFAULT '', IsSiteAdmin INTEGER NOT NULL DEFAULT 0)",
+            "CREATE TABLE IF NOT EXISTS UserEventRoles (UserId INTEGER NOT NULL, EventId INTEGER NOT NULL, Role TEXT NOT NULL DEFAULT '', PRIMARY KEY (UserId, EventId, Role))",
+        }
+        : new[]
+        {
+            "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='Users') CREATE TABLE Users (Id INT IDENTITY(1,1) PRIMARY KEY, Email NVARCHAR(254) NOT NULL DEFAULT '', Name NVARCHAR(200) NOT NULL DEFAULT '', IsSiteAdmin BIT NOT NULL DEFAULT 0)",
+            "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='UserEventRoles') CREATE TABLE UserEventRoles (UserId INT NOT NULL, EventId INT NOT NULL, Role NVARCHAR(50) NOT NULL DEFAULT '', PRIMARY KEY (UserId, EventId, Role))",
+        };
+
+    foreach (var sql in userPatches)
+    {
+        try { db.Database.ExecuteSqlRaw(sql); }
+        catch { /* table already exists */ }
+    }
+
+    if (!db.Users.Any(u => u.Email == "mish.olson@gmail.com"))
+    {
+        db.Users.Add(new User { Email = "mish.olson@gmail.com", Name = "Mike Olson", IsSiteAdmin = true });
+        db.SaveChanges();
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -114,5 +155,6 @@ app.MapImportEndpoints();
 app.MapQrPdfEndpoints();
 app.MapContestEndpoints();
 app.MapSongEndpoints();
+app.MapUserEndpoints();
 
 app.Run();

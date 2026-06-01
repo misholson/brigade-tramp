@@ -1,3 +1,4 @@
+using BrigadeTramp.Api.Auth;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.DTOs;
 using BrigadeTramp.Api.Models;
@@ -21,8 +22,10 @@ public static class SongEndpoints
             return Results.Ok(songs);
         });
 
-        app.MapGet("/api/events/{id:int}/songs", async (int id, AppDbContext db) =>
+        app.MapGet("/api/events/{id:int}/songs", async (int id, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanViewEvent(ctx.User, id)) return Results.Forbid();
+
             var songs = await db.Songs
                 .Where(s => s.EventId == id)
                 .OrderBy(s => s.SortOrder)
@@ -31,8 +34,10 @@ public static class SongEndpoints
             return Results.Ok(songs);
         }).RequireAuthorization();
 
-        app.MapPut("/api/events/{id:int}/songs", async (int id, SetSongsDto dto, AppDbContext db) =>
+        app.MapPut("/api/events/{id:int}/songs", async (int id, SetSongsDto dto, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanManageEvent(ctx.User, id)) return Results.Forbid();
+
             var existing = await db.Songs.Where(s => s.EventId == id).ToListAsync();
             db.Songs.RemoveRange(existing);
             var songs = dto.Titles

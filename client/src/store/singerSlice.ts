@@ -7,7 +7,7 @@ export const fetchSingerByCode = createAsyncThunk(
   'singer/fetchByCode',
   async (code: string, { getState }) => {
     const { auth } = getState() as RootState;
-    return createApiClient(auth.credentials).get<SingerDetailDto>(`/singer/${code}`);
+    return createApiClient(auth.token).get<SingerDetailDto>(`/singer/${code}`);
   }
 );
 
@@ -17,7 +17,7 @@ export const toggleSungWith = createAsyncThunk(
   'singer/toggleSungWith',
   async ({ singerId, otherId, remove }: ToggleArgs, { getState }) => {
     const { auth } = getState() as RootState;
-    const client = createApiClient(auth.credentials);
+    const client = createApiClient(auth.token);
     if (remove) {
       await client.delete(`/singer/${singerId}/sung-with/${otherId}`);
     } else {
@@ -31,7 +31,7 @@ export const toggleSungWithTwice = createAsyncThunk(
   'singer/toggleSungWithTwice',
   async ({ singerId, otherId, remove }: ToggleArgs, { getState }) => {
     const { auth } = getState() as RootState;
-    const client = createApiClient(auth.credentials);
+    const client = createApiClient(auth.token);
     if (remove) {
       await client.delete(`/singer/${singerId}/sung-with-twice/${otherId}`);
     } else {
