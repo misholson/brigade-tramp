@@ -76,7 +76,7 @@ public static class EventEndpoints
                 .ToList();
 
             var subject = $"[{ev.Name}] {dto.Subject}";
-            await emailService.SendAsync(addresses, subject, dto.Body);
+            await emailService.SendBccAsync(addresses, subject, dto.Body);
 
             return Results.Ok();
         });
