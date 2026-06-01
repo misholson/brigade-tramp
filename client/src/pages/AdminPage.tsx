@@ -201,6 +201,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { events, status } = useAppSelector(s => s.admin);
   const token = useAppSelector(s => s.auth.token);
+  const user = useAppSelector(s => s.auth.user);
   const isSiteAdmin = useAppSelector(selectIsSiteAdmin);
 
   const [editEvent, setEditEvent] = useState<EventWithSingersDto | null>(null);
@@ -209,7 +210,7 @@ export default function AdminPage() {
 
   const [singerForm, setSingerForm] = useState<SingerFormState | null>(null);
   const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number }) | null>(null);
-  const [songsModal, setSongsModal] = useState<{ eventId: number; text: string } | null>(null);
+  const [songsModal, setSongsModal] = useState<{ eventId: number; text: string; readOnly: boolean } | null>(null);
   const [songsSaving, setSongsSaving] = useState(false);
 
   const [emailModal, setEmailModal] = useState<{ eventId: number; eventName: string } | null>(null);
@@ -305,11 +306,12 @@ export default function AdminPage() {
   };
 
   const openSongs = async (eventId: number) => {
+    const canMgr = user?.isSiteAdmin || user?.eventRoles.some(r => r.eventId === eventId && r.role === 'EventAdmin') || false;
     const res = await fetch(`${BASE_URL}/events/${eventId}/songs`, {
       headers: { Authorization: `Bearer ${token ?? ''}` },
     });
     const titles: string[] = res.ok ? await res.json() : [];
-    setSongsModal({ eventId, text: titles.join('\n') });
+    setSongsModal({ eventId, text: titles.join('\n'), readOnly: !canMgr });
   };
 
   const handleSaveSongs = async () => {
@@ -537,23 +539,31 @@ export default function AdminPage() {
         <StatusMsg>No events yet. Create one to get started.</StatusMsg>
       )}
 
-      {events.map(ev => (
-        <EventCard
-          key={ev.id}
-          event={ev}
-          onEdit={openEditEvent}
-          onDelete={handleDeleteEvent}
-          onImport={id => navigate(`/import?eventId=${id}`)}
-          onDownloadPdf={handleDownloadPdf}
-          onAddSinger={id => setSingerForm(emptySingerForm(id))}
-          onEditSinger={openEditSinger}
-          onContests={id => navigate(`/contests?eventId=${id}`)}
-          onSongs={openSongs}
-          onEmail={openEmailModal}
-          onManageRoles={openRolesModal}
-          canDelete={isSiteAdmin}
-        />
-      ))}
+      {events.map(ev => {
+        const evCanManage = user?.isSiteAdmin || user?.eventRoles.some(r => r.eventId === ev.id && r.role === 'EventAdmin') || false;
+        const evCanViewContest = user?.isSiteAdmin || user?.eventRoles.some(r => r.eventId === ev.id && ['EventAdmin', 'ContestAdmin'].includes(r.role)) || false;
+        const evCanView = user?.isSiteAdmin || user?.eventRoles.some(r => r.eventId === ev.id) || false;
+        return (
+          <EventCard
+            key={ev.id}
+            event={ev}
+            onEdit={openEditEvent}
+            onDelete={handleDeleteEvent}
+            onImport={id => navigate(`/import?eventId=${id}`)}
+            onDownloadPdf={handleDownloadPdf}
+            onAddSinger={id => setSingerForm(emptySingerForm(id))}
+            onEditSinger={openEditSinger}
+            onContests={id => navigate(`/contests?eventId=${id}`)}
+            onSongs={openSongs}
+            onEmail={openEmailModal}
+            onManageRoles={openRolesModal}
+            canDelete={isSiteAdmin}
+            canManage={evCanManage}
+            canViewContest={evCanViewContest}
+            canView={evCanView}
+          />
+        );
+      })}
 
       {/* Event create/edit modal */}
       {(isCreatingEvent || editEvent) && (
@@ -697,16 +707,20 @@ export default function AdminPage() {
               <Label>Song list</Label>
               <Textarea
                 autoFocus
+                readOnly={songsModal.readOnly}
                 value={songsModal.text}
-                onChange={e => setSongsModal(m => m && ({ ...m, text: e.target.value }))}
+                onChange={e => !songsModal.readOnly && setSongsModal(m => m && ({ ...m, text: e.target.value }))}
+                style={songsModal.readOnly ? { background: 'revert', cursor: 'default' } : undefined}
               />
-              <Hint>One song title per line.</Hint>
+              {!songsModal.readOnly && <Hint>One song title per line.</Hint>}
             </Field>
             <ModalActions>
-              <Btn $variant="secondary" onClick={() => setSongsModal(null)}>Cancel</Btn>
-              <Btn $variant="primary" onClick={handleSaveSongs} disabled={songsSaving}>
-                {songsSaving ? 'Saving…' : 'Save'}
-              </Btn>
+              <Btn $variant="secondary" onClick={() => setSongsModal(null)}>{songsModal.readOnly ? 'Close' : 'Cancel'}</Btn>
+              {!songsModal.readOnly && (
+                <Btn $variant="primary" onClick={handleSaveSongs} disabled={songsSaving}>
+                  {songsSaving ? 'Saving…' : 'Save'}
+                </Btn>
+              )}
             </ModalActions>
           </ModalBox>
         </Overlay>

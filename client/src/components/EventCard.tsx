@@ -19,6 +19,9 @@ interface Props {
   onEmail: (event: EventWithSingersDto) => void;
   onManageRoles: (eventId: number) => void;
   canDelete?: boolean;
+  canManage?: boolean;
+  canViewContest?: boolean;
+  canView?: boolean;
 }
 
 const Card = styled.div`
@@ -132,7 +135,7 @@ const EmptyMsg = styled.span`
   font-size: 0.9rem;
 `;
 
-export default function EventCard({ event, onEdit, onDelete, onImport, onDownloadPdf, onAddSinger, onEditSinger, onContests, onSongs, onEmail, onManageRoles, canDelete }: Props) {
+export default function EventCard({ event, onEdit, onDelete, onImport, onDownloadPdf, onAddSinger, onEditSinger, onContests, onSongs, onEmail, onManageRoles, canDelete, canManage = true, canViewContest = true, canView = true }: Props) {
   const [expanded, setExpanded] = useState(false);
   const dispatch = useAppDispatch();
 
@@ -150,14 +153,14 @@ export default function EventCard({ event, onEdit, onDelete, onImport, onDownloa
           </EventDate>
         </EventInfo>
         <Actions onClick={e => e.stopPropagation()}>
-          <Btn $variant="secondary" onClick={() => onEdit(event)}>Edit</Btn>
-          <Btn $variant="success" onClick={() => onAddSinger(event.id)}>+ Singer</Btn>
-          <Btn $variant="secondary" onClick={() => onImport(event.id)}>Import</Btn>
-          <Btn $variant="secondary" onClick={() => onContests(event.id)}>Contests</Btn>
-          <Btn $variant="secondary" onClick={() => onSongs(event.id)}>Songs</Btn>
-          <Btn $variant="primary" onClick={() => onDownloadPdf(event.id)}>QR PDF</Btn>
-          <Btn $variant="secondary" onClick={() => onEmail(event)}>Email</Btn>
-          <Btn $variant="secondary" onClick={() => onManageRoles(event.id)}>Roles</Btn>
+          {canManage && <Btn $variant="secondary" onClick={() => onEdit(event)}>Edit</Btn>}
+          {canManage && <Btn $variant="success" onClick={() => onAddSinger(event.id)}>+ Singer</Btn>}
+          {canManage && <Btn $variant="secondary" onClick={() => onImport(event.id)}>Import</Btn>}
+          {canViewContest && <Btn $variant="secondary" onClick={() => onContests(event.id)}>Contests</Btn>}
+          {(canManage || canView) && <Btn $variant="secondary" onClick={() => onSongs(event.id)}>Songs</Btn>}
+          {(canManage || canView) && <Btn $variant="primary" onClick={() => onDownloadPdf(event.id)}>QR PDF</Btn>}
+          {(canManage || canView) && <Btn $variant="secondary" onClick={() => onEmail(event)}>Email</Btn>}
+          {canManage && <Btn $variant="secondary" onClick={() => onManageRoles(event.id)}>Roles</Btn>}
           {canDelete && <Btn $variant="danger" onClick={() => onDelete(event.id)}>Delete</Btn>}
         </Actions>
       </CardHeader>
@@ -173,17 +176,21 @@ export default function EventCard({ event, onEdit, onDelete, onImport, onDownloa
                 <SingerLink to={`/singer/${s.code}`}>
                   {s.badgeName} — {s.firstName} {s.lastName}
                 </SingerLink>
-                <StatusSelect
-                  $status={s.status as SingerStatus}
-                  value={s.status}
-                  onChange={e => handleStatusChange(s.id, e.target.value)}
-                  onClick={e => e.stopPropagation()}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Optional">Optional</option>
-                  <option value="Inactive">Inactive</option>
-                </StatusSelect>
-                <Btn onClick={e => { e.stopPropagation(); onEditSinger(s); }}>Edit</Btn>
+                {canManage ? (
+                  <StatusSelect
+                    $status={s.status as SingerStatus}
+                    value={s.status}
+                    onChange={e => handleStatusChange(s.id, e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Optional">Optional</option>
+                    <option value="Inactive">Inactive</option>
+                  </StatusSelect>
+                ) : (
+                  <span style={{ fontSize: '0.78rem' }}>{s.status}</span>
+                )}
+                {canManage && <Btn onClick={e => { e.stopPropagation(); onEditSinger(s); }}>Edit</Btn>}
               </SingerRow>
             ))
           )}

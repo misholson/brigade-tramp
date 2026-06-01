@@ -487,6 +487,7 @@ export default function ContestsPage() {
   const eventId = searchParams.get('eventId');
   const navigate = useNavigate();
   const token = useAppSelector(s => s.auth.token);
+  const user = useAppSelector(s => s.auth.user);
 
   const [eventName, setEventName] = useState('');
   const [showScores, setShowScores] = useState(false);
@@ -512,6 +513,12 @@ export default function ContestsPage() {
   const [scoringModal, setScoringModal] = useState<{ quartets: ContestQuartet[]; index: number; round: 1 | 2 } | null>(null);
   const [judgeScores, setJudgeScores] = useState<[string, string, string, string]>(['', '', '', '']);
   const judgeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
+
+  const numericEventId = eventId ? parseInt(eventId, 10) : null;
+  const canManageContest = numericEventId != null && (
+    user?.isSiteAdmin ||
+    user?.eventRoles.some(r => r.eventId === numericEventId && ['EventAdmin', 'ContestAdmin'].includes(r.role))
+  ) || false;
 
   const authHeader = `Bearer ${token ?? ''}`;
 
@@ -780,7 +787,7 @@ export default function ContestsPage() {
           <span>Round 2 — Top {contest.round2Count}</span>
           <div style={{ display: 'flex', gap: 6 }}>
             {showScores && <SmallBtn onClick={() => openScoringModalRound2(top)}>Score Quartets</SmallBtn>}
-            <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>
+            {canManageContest && <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>}
           </div>
         </Round2SectionHeader>
 
@@ -879,6 +886,17 @@ export default function ContestsPage() {
     );
   }
 
+  if (!loading && !canManageContest) {
+    return (
+      <Container>
+        <Msg $err>You do not have permission to view contests for this event.</Msg>
+        <div style={{ textAlign: 'center' }}>
+          <Btn onClick={() => navigate('/admin')}>← Back to Admin</Btn>
+        </div>
+      </Container>
+    );
+  }
+
   const renderQuartets = (contest: ContestData) => {
     if (contest.quartets.length === 0) {
       return <EmptyMsg>No quartets yet — click Generate Quartets.</EmptyMsg>;
@@ -918,7 +936,7 @@ export default function ContestsPage() {
         <SectionToolbar>
           {showScores && <SmallBtn onClick={() => openScoringModal(contest)}>Score Quartets</SmallBtn>}
           <SmallBtn onClick={() => openEmailModal(contest.id)}>Email Quartets</SmallBtn>
-          <SmallBtn onClick={handleR1Randomize}>Randomize Order</SmallBtn>
+          {canManageContest && <SmallBtn onClick={handleR1Randomize}>Randomize Order</SmallBtn>}
         </SectionToolbar>
         {/* Desktop table */}
         <DesktopOnly>
@@ -1027,7 +1045,7 @@ export default function ContestsPage() {
           {eventName && <Sub>{eventName}</Sub>}
         </TitleBlock>
         <HeaderActions>
-          <Btn $variant="primary" onClick={() => { setNewName(''); setShowCreate(true); }}>+ New Contest</Btn>
+          {canManageContest && <Btn $variant="primary" onClick={() => { setNewName(''); setShowCreate(true); }}>+ New Contest</Btn>}
           <Btn onClick={() => navigate('/admin')}>← Admin</Btn>
         </HeaderActions>
       </Header>
@@ -1043,14 +1061,16 @@ export default function ContestsPage() {
           <ContestHeader>
             <ContestName>{contest.name}</ContestName>
             <ContestActions>
-              <Btn onClick={() => setEditingName({ id: contest.id, name: contest.name })}>Rename</Btn>
-              <Btn
-                $variant="primary"
-                disabled={generating === contest.id}
-                onClick={() => handleGenerate(contest.id)}
-              >
-                {generating === contest.id ? 'Generating…' : 'Generate Quartets'}
-              </Btn>
+              {canManageContest && <Btn onClick={() => setEditingName({ id: contest.id, name: contest.name })}>Rename</Btn>}
+              {canManageContest && (
+                <Btn
+                  $variant="primary"
+                  disabled={generating === contest.id}
+                  onClick={() => handleGenerate(contest.id)}
+                >
+                  {generating === contest.id ? 'Generating…' : 'Generate Quartets'}
+                </Btn>
+              )}
               {showScores && (
                 <Btn
                   disabled={contest.quartets.length === 0}
@@ -1059,13 +1079,15 @@ export default function ContestsPage() {
                   Score Quartets
                 </Btn>
               )}
-              <Btn
-                disabled={contest.quartets.length === 0}
-                onClick={() => openRound2Modal(contest)}
-              >
-                Prepare Round 2
-              </Btn>
-              <Btn $variant="danger" onClick={() => handleDelete(contest.id)}>Delete</Btn>
+              {canManageContest && (
+                <Btn
+                  disabled={contest.quartets.length === 0}
+                  onClick={() => openRound2Modal(contest)}
+                >
+                  Prepare Round 2
+                </Btn>
+              )}
+              {canManageContest && <Btn $variant="danger" onClick={() => handleDelete(contest.id)}>Delete</Btn>}
             </ContestActions>
           </ContestHeader>
           {renderQuartets(contest)}
