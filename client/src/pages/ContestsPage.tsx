@@ -486,9 +486,10 @@ export default function ContestsPage() {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get('eventId');
   const navigate = useNavigate();
-  const credentials = useAppSelector(s => s.auth.credentials);
+  const token = useAppSelector(s => s.auth.token);
 
   const [eventName, setEventName] = useState('');
+  const [showScores, setShowScores] = useState(false);
   const [contests, setContests] = useState<ContestData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -512,7 +513,7 @@ export default function ContestsPage() {
   const [judgeScores, setJudgeScores] = useState<[string, string, string, string]>(['', '', '', '']);
   const judgeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
 
-  const authHeader = `Basic ${credentials ?? ''}`;
+  const authHeader = `Bearer ${token ?? ''}`;
 
   useEffect(() => {
     if (!toast) return;
@@ -558,9 +559,10 @@ export default function ContestsPage() {
         headers: { Authorization: authHeader },
       });
       if (!res.ok) { setError(`Failed to load (HTTP ${res.status})`); return; }
-      const data = await res.json() as { eventName: string; contests: ContestData[] };
+      const data = await res.json() as { eventName: string; contests: ContestData[]; showScores: boolean };
       setEventName(data.eventName);
       setContests(data.contests);
+      setShowScores(data.showScores);
       const scoreMap: Record<number, string> = {};
       const score2Map: Record<number, string> = {};
       const nameMap: Record<number, string> = {};
@@ -777,7 +779,7 @@ export default function ContestsPage() {
         <Round2SectionHeader>
           <span>Round 2 — Top {contest.round2Count}</span>
           <div style={{ display: 'flex', gap: 6 }}>
-            <SmallBtn onClick={() => openScoringModalRound2(top)}>Score Quartets</SmallBtn>
+            {showScores && <SmallBtn onClick={() => openScoringModalRound2(top)}>Score Quartets</SmallBtn>}
             <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>
           </div>
         </Round2SectionHeader>
@@ -914,6 +916,7 @@ export default function ContestsPage() {
     return (
       <>
         <SectionToolbar>
+          {showScores && <SmallBtn onClick={() => openScoringModal(contest)}>Score Quartets</SmallBtn>}
           <SmallBtn onClick={() => openEmailModal(contest.id)}>Email Quartets</SmallBtn>
           <SmallBtn onClick={handleR1Randomize}>Randomize Order</SmallBtn>
         </SectionToolbar>
@@ -929,7 +932,7 @@ export default function ContestsPage() {
                 <Th $part="Baritone">Baritone</Th>
                 <Th $part="Bass">Bass</Th>
                 <Th>Song</Th>
-                <Th>Round 1 Score</Th>
+                {showScores && <Th>Round 1 Score</Th>}
               </tr>
             </thead>
             <tbody>
@@ -950,17 +953,19 @@ export default function ContestsPage() {
                   <Td>{fmt(quartet, idx, 'Baritone')}</Td>
                   <Td>{fmt(quartet, idx, 'Bass')}</Td>
                   <Td>{quartet.songTitle ?? '—'}</Td>
-                  <Td>
-                    <ScoreInput
-                      type="number"
-                      step="0.1"
-                      value={scores[quartet.id] ?? ''}
-                      placeholder="—"
-                      onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
-                      onBlur={() => handleScoreSave(quartet.id)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
-                    />
-                  </Td>
+                  {showScores && (
+                    <Td>
+                      <ScoreInput
+                        type="number"
+                        step="0.1"
+                        value={scores[quartet.id] ?? ''}
+                        placeholder="—"
+                        onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
+                        onBlur={() => handleScoreSave(quartet.id)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
+                      />
+                    </Td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -981,18 +986,20 @@ export default function ContestsPage() {
                   onKeyDown={e => { if (e.key === 'Enter') handleNameSave(quartet.id); }}
                 />
               </MobileCardTop>
-              <MobileScoreRow>
-                <MobileScoreLabel>Round 1:</MobileScoreLabel>
-                <MobileScoreInput
-                  type="number"
-                  step="0.1"
-                  value={scores[quartet.id] ?? ''}
-                  placeholder="—"
-                  onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
-                  onBlur={() => handleScoreSave(quartet.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
-                />
-              </MobileScoreRow>
+              {showScores && (
+                <MobileScoreRow>
+                  <MobileScoreLabel>Round 1:</MobileScoreLabel>
+                  <MobileScoreInput
+                    type="number"
+                    step="0.1"
+                    value={scores[quartet.id] ?? ''}
+                    placeholder="—"
+                    onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
+                    onBlur={() => handleScoreSave(quartet.id)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
+                  />
+                </MobileScoreRow>
+              )}
               {PARTS.map(part => (
                 <MobileSingerRow key={part}>
                   <PartDot $part={part}>{part[0]}</PartDot>
@@ -1044,12 +1051,14 @@ export default function ContestsPage() {
               >
                 {generating === contest.id ? 'Generating…' : 'Generate Quartets'}
               </Btn>
-              <Btn
-                disabled={contest.quartets.length === 0}
-                onClick={() => openScoringModal(contest)}
-              >
-                Score Quartets
-              </Btn>
+              {showScores && (
+                <Btn
+                  disabled={contest.quartets.length === 0}
+                  onClick={() => openScoringModal(contest)}
+                >
+                  Score Quartets
+                </Btn>
+              )}
               <Btn
                 disabled={contest.quartets.length === 0}
                 onClick={() => openRound2Modal(contest)}

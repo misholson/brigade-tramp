@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAppDispatch } from '../hooks/useAppDispatch';
-import { setCredentials } from '../store/authSlice';
+import { setAuth } from '../store/authSlice';
+import type { UserInfo } from '../store/authSlice';
 import { BASE_URL } from '../api/apiClient';
 
 const Container = styled.div`
@@ -12,108 +14,72 @@ const Container = styled.div`
   background: ${p => p.theme.colors.surface};
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 `;
 
 const Title = styled.h1`
   font-size: 1.5rem;
-  margin: 0 0 24px;
+  margin: 0;
   text-align: center;
   color: ${p => p.theme.colors.text};
-`;
-
-const Field = styled.div`
-  margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-`;
-
-const Label = styled.label`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${p => p.theme.colors.textSecondary};
-`;
-
-const Input = styled.input`
-  padding: 10px;
-  border: 1px solid ${p => p.theme.colors.inputBorder};
-  border-radius: 6px;
-  font-size: 1rem;
-  background: ${p => p.theme.colors.inputBg};
-  color: ${p => p.theme.colors.text};
-  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
-`;
-
-const SubmitBtn = styled.button`
-  width: 100%;
-  padding: 12px;
-  background: #1565c0;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  &:hover { background: #0d47a1; }
-  &:disabled { opacity: 0.6; cursor: default; }
 `;
 
 const ErrorMsg = styled.div`
   color: #c62828;
   font-size: 0.9rem;
-  margin-bottom: 12px;
   text-align: center;
 `;
 
+interface AuthResultDto {
+  token: string;
+  user: UserInfo;
+}
+
 export default function LoginPage() {
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
     setError('');
-    setLoading(true);
+    if (!response.credential) {
+      setError('No credential received from Google.');
+      return;
+    }
     try {
-      const res = await fetch(`${BASE_URL}/auth/login`, {
+      const res = await fetch(`${BASE_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'admin', password }),
+        body: JSON.stringify({ idToken: response.credential }),
       });
-      if (res.ok) {
-        dispatch(setCredentials(btoa(`admin:${password}`)));
+      if (!res.ok) {
+        setError('Login failed. Your account may not be authorized.');
+        return;
+      }
+      const data = await res.json() as AuthResultDto;
+      dispatch(setAuth({ token: data.token, user: data.user }));
+      if (data.user.isSiteAdmin || data.user.eventRoles.length > 0) {
         navigate('/admin');
       } else {
-        setError('Invalid password.');
+        navigate('/my-events');
       }
     } catch {
       setError('Connection error. Is the server running?');
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <Container>
-      <Title>Brigade Tramp Admin</Title>
+      <Title>Brigade Tramp</Title>
       {error && <ErrorMsg>{error}</ErrorMsg>}
-      <form onSubmit={handleSubmit}>
-        <Field>
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            autoFocus
-          />
-        </Field>
-        <SubmitBtn type="submit" disabled={loading || !password}>
-          {loading ? 'Logging in...' : 'Login'}
-        </SubmitBtn>
-      </form>
+      <GoogleLogin
+        onSuccess={handleGoogleSuccess}
+        onError={() => setError('Google sign-in failed. Please try again.')}
+        useOneTap
+      />
     </Container>
   );
 }

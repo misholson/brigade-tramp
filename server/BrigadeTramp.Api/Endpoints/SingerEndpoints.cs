@@ -1,3 +1,4 @@
+using BrigadeTramp.Api.Auth;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.DTOs;
 using BrigadeTramp.Api.Models;
@@ -92,10 +93,11 @@ public static class SingerEndpoints
             return Results.Ok();
         });
 
-        app.MapPut("/api/singers/{id:int}", async (int id, UpdateSingerDto dto, AppDbContext db) =>
+        app.MapPut("/api/singers/{id:int}", async (int id, UpdateSingerDto dto, AppDbContext db, HttpContext ctx) =>
         {
             var singer = await db.Singers.FindAsync(id);
             if (singer is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageEvent(ctx.User, singer.EventId)) return Results.Forbid();
             if (!Enum.TryParse<Part>(dto.Part, ignoreCase: true, out var part))
                 return Results.BadRequest("Invalid part. Use Tenor, Lead, Baritone, or Bass.");
             if (!Enum.TryParse<SingerStatus>(dto.Status, ignoreCase: true, out var status))
@@ -110,10 +112,11 @@ public static class SingerEndpoints
             return Results.Ok(ToDto(singer));
         }).RequireAuthorization();
 
-        app.MapPatch("/api/singers/{id:int}/status", async (int id, UpdateSingerStatusDto dto, AppDbContext db) =>
+        app.MapPatch("/api/singers/{id:int}/status", async (int id, UpdateSingerStatusDto dto, AppDbContext db, HttpContext ctx) =>
         {
             var singer = await db.Singers.FindAsync(id);
             if (singer is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageEvent(ctx.User, singer.EventId)) return Results.Forbid();
             if (!Enum.TryParse<SingerStatus>(dto.Status, ignoreCase: true, out var status))
                 return Results.BadRequest("Invalid status. Use Active, Inactive, or Optional.");
             singer.Status = status;

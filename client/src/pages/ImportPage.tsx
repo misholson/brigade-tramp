@@ -81,7 +81,7 @@ export default function ImportPage() {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get('eventId');
   const navigate = useNavigate();
-  const credentials = useAppSelector(s => s.auth.credentials);
+  const token = useAppSelector(s => s.auth.token);
 
   const [csvText, setCsvText] = useState('');
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -105,7 +105,7 @@ export default function ImportPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'text/csv',
-          Authorization: `Basic ${credentials ?? ''}`,
+          Authorization: `Bearer ${token ?? ''}`,
         },
         body: csvText,
       });

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using BrigadeTramp.Api.Auth;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.DTOs;
 using BrigadeTramp.Api.Models;
@@ -13,12 +14,28 @@ public static class EventEndpoints
     {
         var group = app.MapGroup("/api/events").RequireAuthorization();
 
-        group.MapGet("/", async (AppDbContext db) =>
+        group.MapGet("/", async (AppDbContext db, HttpContext ctx) =>
         {
+            var isSiteAdmin = AuthHelpers.IsSiteAdmin(ctx.User);
+            var userId = AuthHelpers.GetUserId(ctx.User);
+
+            List<int> allowedEventIds = [];
+            if (!isSiteAdmin && userId.HasValue)
+            {
+                allowedEventIds = await db.UserEventRoles
+                    .Where(r => r.UserId == userId.Value)
+                    .Select(r => r.EventId)
+                    .Distinct()
+                    .ToListAsync();
+            }
+
             var events = await db.Events
                 .Include(e => e.Singers)
                 .OrderByDescending(e => e.Date)
                 .ToListAsync();
+
+            if (!isSiteAdmin)
+                events = events.Where(e => allowedEventIds.Contains(e.Id)).ToList();
 
             return events.Select(e => new EventWithSingersDto(
                 e.Id, e.Name, e.Date, e.EndDate, e.AllowBusyBee, e.EmailFooter,
@@ -29,16 +46,20 @@ public static class EventEndpoints
             ));
         });
 
-        group.MapPost("/", async (CreateEventDto dto, AppDbContext db) =>
+        group.MapPost("/", async (CreateEventDto dto, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.IsSiteAdmin(ctx.User)) return Results.Forbid();
+
             var ev = new Event { Name = dto.Name, Date = dto.Date, EndDate = dto.EndDate, AllowBusyBee = dto.AllowBusyBee, EmailFooter = dto.EmailFooter };
             db.Events.Add(ev);
             await db.SaveChangesAsync();
             return Results.Created($"/api/events/{ev.Id}", new EventDto(ev.Id, ev.Name, ev.Date, ev.EndDate, ev.AllowBusyBee, ev.EmailFooter));
         });
 
-        group.MapPut("/{id:int}", async (int id, UpdateEventDto dto, AppDbContext db) =>
+        group.MapPut("/{id:int}", async (int id, UpdateEventDto dto, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanManageEvent(ctx.User, id)) return Results.Forbid();
+
             var ev = await db.Events.FindAsync(id);
             if (ev is null) return Results.NotFound();
             ev.Name = dto.Name;
@@ -50,8 +71,10 @@ public static class EventEndpoints
             return Results.Ok(new EventDto(ev.Id, ev.Name, ev.Date, ev.EndDate, ev.AllowBusyBee, ev.EmailFooter));
         });
 
-        group.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
+        group.MapDelete("/{id:int}", async (int id, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.IsSiteAdmin(ctx.User)) return Results.Forbid();
+
             var ev = await db.Events.FindAsync(id);
             if (ev is null) return Results.NotFound();
             db.Events.Remove(ev);
@@ -59,8 +82,11 @@ public static class EventEndpoints
             return Results.NoContent();
         });
 
-        group.MapPost("/{id:int}/send-emails", async (int id, SendSingerEmailsDto dto, AppDbContext db, EmailService emailService) =>
+        group.MapPost("/{id:int}/send-emails", async (int id, SendSingerEmailsDto dto, AppDbContext db, HttpContext ctx, EmailService emailService) =>
         {
+            if (!AuthHelpers.CanManageEvent(ctx.User, id) && !AuthHelpers.HasEventRole(ctx.User, id, EventRole.EventUser))
+                return Results.Forbid();
+
             var ev = await db.Events.Include(e => e.Singers).FirstOrDefaultAsync(e => e.Id == id);
             if (ev is null) return Results.NotFound();
 
@@ -84,8 +110,10 @@ public static class EventEndpoints
             return Results.Ok();
         });
 
-        group.MapPost("/{id:int}/singers", async (int id, AddSingerDto dto, AppDbContext db) =>
+        group.MapPost("/{id:int}/singers", async (int id, AddSingerDto dto, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanManageEvent(ctx.User, id)) return Results.Forbid();
+
             var ev = await db.Events.FindAsync(id);
             if (ev is null) return Results.NotFound();
 
