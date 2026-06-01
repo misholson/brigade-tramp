@@ -15,7 +15,7 @@ public static class AuthHelpers
     }
 
     public static string? GetEmail(ClaimsPrincipal user) =>
-        user.FindFirstValue("email");
+        user.FindFirstValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
 
     public static bool IsSiteAdmin(ClaimsPrincipal user) =>
         user.FindFirstValue("is_site_admin") == "true";
