@@ -148,17 +148,18 @@ const SearchDropdownItem = styled.div`
   &:last-child { border-bottom: none; }
 `;
 
-const Textarea = styled.textarea`
+const Textarea = styled.textarea<{ $readOnly?: boolean }>`
   padding: 9px;
   border: 1px solid ${p => p.theme.colors.inputBorder};
   border-radius: 5px;
   font-size: 0.9rem;
   font-family: inherit;
-  resize: vertical;
+  resize: ${p => p.$readOnly ? 'none' : 'vertical'};
   min-height: 180px;
-  background: ${p => p.theme.colors.inputBg};
+  background: ${p => p.$readOnly ? p.theme.colors.surfaceAlt : p.theme.colors.inputBg};
   color: ${p => p.theme.colors.text};
-  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
+  cursor: ${p => p.$readOnly ? 'default' : 'auto'};
+  &:focus { outline: ${p => p.$readOnly ? 'none' : `2px solid ${p.theme.colors.focus}`}; border-color: transparent; }
 `;
 
 const Hint = styled.p`
@@ -719,9 +720,9 @@ export default function AdminPage() {
               <Textarea
                 autoFocus
                 readOnly={songsModal.readOnly}
+                $readOnly={songsModal.readOnly}
                 value={songsModal.text}
                 onChange={e => !songsModal.readOnly && setSongsModal(m => m && ({ ...m, text: e.target.value }))}
-                style={songsModal.readOnly ? { background: 'revert', cursor: 'default' } : undefined}
               />
               {!songsModal.readOnly && <Hint>One song title per line.</Hint>}
             </Field>
