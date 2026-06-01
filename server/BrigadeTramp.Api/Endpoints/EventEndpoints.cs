@@ -21,7 +21,7 @@ public static class EventEndpoints
                 .ToListAsync();
 
             return events.Select(e => new EventWithSingersDto(
-                e.Id, e.Name, e.Date, e.AllowBusyBee,
+                e.Id, e.Name, e.Date, e.AllowBusyBee, e.EmailFooter,
                 e.Singers
                     .OrderBy(s => s.BadgeName).ThenBy(s => s.LastName)
                     .Select(SingerEndpoints.ToDto)
@@ -31,10 +31,10 @@ public static class EventEndpoints
 
         group.MapPost("/", async (CreateEventDto dto, AppDbContext db) =>
         {
-            var ev = new Event { Name = dto.Name, Date = dto.Date, AllowBusyBee = dto.AllowBusyBee };
+            var ev = new Event { Name = dto.Name, Date = dto.Date, AllowBusyBee = dto.AllowBusyBee, EmailFooter = dto.EmailFooter };
             db.Events.Add(ev);
             await db.SaveChangesAsync();
-            return Results.Created($"/api/events/{ev.Id}", new EventDto(ev.Id, ev.Name, ev.Date, ev.AllowBusyBee));
+            return Results.Created($"/api/events/{ev.Id}", new EventDto(ev.Id, ev.Name, ev.Date, ev.AllowBusyBee, ev.EmailFooter));
         });
 
         group.MapPut("/{id:int}", async (int id, UpdateEventDto dto, AppDbContext db) =>
@@ -44,8 +44,9 @@ public static class EventEndpoints
             ev.Name = dto.Name;
             ev.Date = dto.Date;
             ev.AllowBusyBee = dto.AllowBusyBee;
+            ev.EmailFooter = dto.EmailFooter;
             await db.SaveChangesAsync();
-            return Results.Ok(new EventDto(ev.Id, ev.Name, ev.Date, ev.AllowBusyBee));
+            return Results.Ok(new EventDto(ev.Id, ev.Name, ev.Date, ev.AllowBusyBee, ev.EmailFooter));
         });
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
@@ -76,7 +77,8 @@ public static class EventEndpoints
                 .ToList();
 
             var subject = $"[{ev.Name}] {dto.Subject}";
-            await emailService.SendBccAsync(addresses, subject, dto.Body);
+            var body = string.IsNullOrWhiteSpace(ev.EmailFooter) ? dto.Body : $"{dto.Body}\n\n{ev.EmailFooter}";
+            await emailService.SendBccAsync(addresses, subject, body);
 
             return Results.Ok();
         });

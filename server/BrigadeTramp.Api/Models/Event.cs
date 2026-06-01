@@ -6,5 +6,6 @@ public class Event
     public string Name { get; set; } = "";
     public DateOnly Date { get; set; }
     public bool AllowBusyBee { get; set; }
+    public string EmailFooter { get; set; } = "";
     public ICollection<Singer> Singers { get; set; } = [];
 }

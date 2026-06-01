@@ -64,6 +64,7 @@ using (var scope = app.Services.CreateScope())
             "ALTER TABLE SingerSungWiths ADD COLUMN Count INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ContestQuartets ADD COLUMN SortOrder INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ContestQuartets ADD COLUMN SortOrder2 INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE Events ADD COLUMN EmailFooter TEXT NOT NULL DEFAULT ''",
         }
         : new[]
         {
@@ -83,6 +84,7 @@ using (var scope = app.Services.CreateScope())
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('SingerSungWiths') AND name='Count') ALTER TABLE SingerSungWiths ADD Count INT NOT NULL DEFAULT 1",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='SortOrder') ALTER TABLE ContestQuartets ADD SortOrder INT NOT NULL DEFAULT 0",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('ContestQuartets') AND name='SortOrder2') ALTER TABLE ContestQuartets ADD SortOrder2 INT NOT NULL DEFAULT 0",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Events') AND name='EmailFooter') ALTER TABLE Events ADD EmailFooter NVARCHAR(MAX) NOT NULL DEFAULT ''",
         };
 
     foreach (var sql in patches)

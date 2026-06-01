@@ -134,7 +134,7 @@ const StatusMsg = styled.div`
   color: ${p => p.theme.colors.textMuted};
 `;
 
-interface EventFormState { name: string; date: string; allowBusyBee: boolean; }
+interface EventFormState { name: string; date: string; allowBusyBee: boolean; emailFooter: string; }
 interface SingerFormState {
   eventId: number;
   badgeName: string;
@@ -157,7 +157,7 @@ export default function AdminPage() {
 
   const [editEvent, setEditEvent] = useState<EventWithSingersDto | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
-  const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '', allowBusyBee: false });
+  const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '', allowBusyBee: false, emailFooter: '' });
 
   const [singerForm, setSingerForm] = useState<SingerFormState | null>(null);
   const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number }) | null>(null);
@@ -173,12 +173,12 @@ export default function AdminPage() {
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
   const openCreateEvent = () => {
-    setEventForm({ name: '', date: '', allowBusyBee: false });
+    setEventForm({ name: '', date: '', allowBusyBee: false, emailFooter: '' });
     setIsCreatingEvent(true);
   };
 
   const openEditEvent = (ev: EventWithSingersDto) => {
-    setEventForm({ name: ev.name, date: ev.date, allowBusyBee: ev.allowBusyBee });
+    setEventForm({ name: ev.name, date: ev.date, allowBusyBee: ev.allowBusyBee, emailFooter: ev.emailFooter });
     setEditEvent(ev);
   };
 
@@ -189,9 +189,9 @@ export default function AdminPage() {
 
   const handleSaveEvent = () => {
     if (editEvent) {
-      dispatch(updateEvent({ id: editEvent.id, name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee }));
+      dispatch(updateEvent({ id: editEvent.id, name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee, emailFooter: eventForm.emailFooter }));
     } else {
-      dispatch(createEvent({ name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee }));
+      dispatch(createEvent({ name: eventForm.name, date: eventForm.date, allowBusyBee: eventForm.allowBusyBee, emailFooter: eventForm.emailFooter }));
     }
     closeEventModal();
   };
@@ -351,6 +351,16 @@ export default function AdminPage() {
                 />
                 Allow Busy Bee
               </label>
+            </Field>
+            <Field>
+              <Label htmlFor="ev-footer">Email Footer</Label>
+              <Textarea
+                id="ev-footer"
+                value={eventForm.emailFooter}
+                onChange={e => setEventForm(f => ({ ...f, emailFooter: e.target.value }))}
+                style={{ minHeight: '80px' }}
+              />
+              <Hint>Appended to all emails sent for this event.</Hint>
             </Field>
             <ModalActions>
               <Btn $variant="secondary" onClick={closeEventModal}>Cancel</Btn>

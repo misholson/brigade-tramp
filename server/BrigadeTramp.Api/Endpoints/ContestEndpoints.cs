@@ -266,7 +266,10 @@ public static class ContestEndpoints
                     .Select(sl => sl.Singer.Email)
                     .Where(e => !string.IsNullOrWhiteSpace(e))
                     .ToList();
-                await emailService.SendAsync(addresses, Interpolate(dto.Subject), Interpolate(dto.Body));
+                var body = string.IsNullOrWhiteSpace(ev.EmailFooter)
+                    ? Interpolate(dto.Body)
+                    : $"{Interpolate(dto.Body)}\n\n{ev.EmailFooter}";
+                await emailService.SendAsync(addresses, Interpolate(dto.Subject), body);
             }
 
             return Results.Ok();

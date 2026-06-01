@@ -13,7 +13,7 @@ export const fetchEvents = createAsyncThunk(
 
 export const createEvent = createAsyncThunk(
   'admin/createEvent',
-  async (dto: { name: string; date: string; allowBusyBee: boolean }, { getState, dispatch }) => {
+  async (dto: { name: string; date: string; allowBusyBee: boolean; emailFooter: string }, { getState, dispatch }) => {
     const { auth } = getState() as RootState;
     await createApiClient(auth.credentials).post('/events', dto);
     dispatch(fetchEvents());
@@ -22,9 +22,9 @@ export const createEvent = createAsyncThunk(
 
 export const updateEvent = createAsyncThunk(
   'admin/updateEvent',
-  async ({ id, name, date, allowBusyBee }: { id: number; name: string; date: string; allowBusyBee: boolean }, { getState, dispatch }) => {
+  async ({ id, name, date, allowBusyBee, emailFooter }: { id: number; name: string; date: string; allowBusyBee: boolean; emailFooter: string }, { getState, dispatch }) => {
     const { auth } = getState() as RootState;
-    await createApiClient(auth.credentials).put(`/events/${id}`, { name, date, allowBusyBee });
+    await createApiClient(auth.credentials).put(`/events/${id}`, { name, date, allowBusyBee, emailFooter });
     dispatch(fetchEvents());
   }
 );

@@ -25,5 +25,6 @@ export interface EventWithSingersDto {
   name: string;
   date: string;
   allowBusyBee: boolean;
+  emailFooter: string;
   singers: SingerDto[];
 }
