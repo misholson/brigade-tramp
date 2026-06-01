@@ -67,6 +67,26 @@ jobs:
                 "name": "AdminPassword",
                 "value": "${{ secrets.ADMINPASSWORD }}",
                 "slotSetting": false
+              },
+              {
+                "name": "GoogleClientId",
+                "value": "${{ vars.GOOGLE_CLIENT_ID }}",
+                "slotSetting": false
+              },
+              {
+                "name": "Jwt__Issuer",
+                "value": "${{ vars.JWT_ISSUER }}",
+                "slotSetting": false
+              },
+              {
+                "name": "Jwt__Audience",
+                "value": "${{ vars.JWT_AUDIENCE }}",
+                "slotSetting": false
+              },
+              {
+                "name": "Jwt__SecretKey",
+                "value": "${{ secrets.JWT_SECRET_KEY }}",
+                "slotSetting": false
               }
             ]
           connection-strings-json: |
