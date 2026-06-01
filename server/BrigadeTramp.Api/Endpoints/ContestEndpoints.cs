@@ -298,7 +298,7 @@ public static class ContestEndpoints
                 var body = string.IsNullOrWhiteSpace(ev.EmailFooter)
                     ? Interpolate(dto.Body)
                     : $"{Interpolate(dto.Body)}\n\n{ev.EmailFooter}";
-                await emailService.SendAsync(addresses, Interpolate(dto.Subject), body);
+                await emailService.SendAsync(addresses, Interpolate(dto.Subject), body, AuthHelpers.GetEmail(ctx.User));
             }
 
             return Results.Ok();

@@ -114,7 +114,7 @@ public static class UserEndpoints
 
             try
             {
-                await email.SendAsync([dto.Email], subject, body);
+                await email.SendAsync([dto.Email], subject, body, AuthHelpers.GetEmail(ctx.User));
             }
             catch
             {

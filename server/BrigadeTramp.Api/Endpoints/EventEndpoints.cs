@@ -105,7 +105,7 @@ public static class EventEndpoints
 
             var subject = $"[{ev.Name}] {dto.Subject}";
             var body = string.IsNullOrWhiteSpace(ev.EmailFooter) ? dto.Body : $"{dto.Body}\n\n{ev.EmailFooter}";
-            await emailService.SendBccAsync(addresses, subject, body);
+            await emailService.SendBccAsync(addresses, subject, body, AuthHelpers.GetEmail(ctx.User));
 
             return Results.Ok();
         });

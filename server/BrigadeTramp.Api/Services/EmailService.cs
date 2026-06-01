@@ -6,7 +6,7 @@ public class EmailService(IConfiguration config)
 {
     const int BccBatchSize = 50;
 
-    public async Task SendAsync(IEnumerable<string> to, string subject, string body)
+    public async Task SendAsync(IEnumerable<string> to, string subject, string body, string? replyTo = null)
     {
         var connectionString = config["AzureCommunicationServices:ConnectionString"]
             ?? throw new InvalidOperationException("ACS connection string not configured.");
@@ -17,15 +17,15 @@ public class EmailService(IConfiguration config)
         if (recipients.Count == 0) return;
 
         var client = new EmailClient(connectionString);
-        var message = new EmailMessage(
-            senderAddress: fromAddress,
-            recipients: new EmailRecipients(recipients),
-            content: new EmailContent(subject) { PlainText = body });
+        var content = new EmailContent(subject) { PlainText = body };
+        var message = new EmailMessage(fromAddress, new EmailRecipients(recipients), content);
+        if (!string.IsNullOrWhiteSpace(replyTo))
+            message.ReplyTo.Add(new EmailAddress(replyTo));
 
         await client.SendAsync(Azure.WaitUntil.Started, message);
     }
 
-    public async Task SendBccAsync(IEnumerable<string> bcc, string subject, string body)
+    public async Task SendBccAsync(IEnumerable<string> bcc, string subject, string body, string? replyTo = null)
     {
         var connectionString = config["AzureCommunicationServices:ConnectionString"]
             ?? throw new InvalidOperationException("ACS connection string not configured.");
@@ -47,10 +47,9 @@ public class EmailService(IConfiguration config)
             foreach (var addr in allAddresses.Skip(i).Take(BccBatchSize))
                 recipients.BCC.Add(new EmailAddress(addr));
 
-            var message = new EmailMessage(
-                senderAddress: fromAddress,
-                recipients: recipients,
-                content: content);
+            var message = new EmailMessage(fromAddress, recipients, content);
+            if (!string.IsNullOrWhiteSpace(replyTo))
+                message.ReplyTo.Add(new EmailAddress(replyTo));
 
             await client.SendAsync(Azure.WaitUntil.Started, message);
         }
