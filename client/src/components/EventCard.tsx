@@ -158,7 +158,7 @@ export default function EventCard({ event, onEdit, onDelete, onImport, onDownloa
           {canManage && <Btn $variant="secondary" onClick={() => onImport(event.id)}>Import</Btn>}
           {canViewContest && <Btn $variant="secondary" onClick={() => onContests(event.id)}>Contests</Btn>}
           {(canManage || canView) && <Btn $variant="secondary" onClick={() => onSongs(event.id)}>Songs</Btn>}
-          {(canManage || canView) && <Btn $variant="primary" onClick={() => onDownloadPdf(event.id)}>QR PDF</Btn>}
+          {(canManage || canView) && <Btn $variant="secondary" onClick={() => onDownloadPdf(event.id)}>QR PDF</Btn>}
           {(canManage || canView) && <Btn $variant="secondary" onClick={() => onEmail(event)}>Email</Btn>}
           {canManage && <Btn $variant="secondary" onClick={() => onManageRoles(event.id)}>Roles</Btn>}
           {canDelete && <Btn $variant="danger" onClick={() => onDelete(event.id)}>Delete</Btn>}
