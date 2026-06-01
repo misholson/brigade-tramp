@@ -5,7 +5,7 @@ public record ContestQuartetDto(int Id, string Name, decimal? Score, decimal? Sc
 public record ReorderContestDto(List<int> Ids);
 public record SetQuartetNameDto(string Name);
 public record ContestDto(int Id, string Name, int EventId, int? Round2Count, List<ContestQuartetDto> Quartets);
-public record ContestsPageDto(string EventName, List<ContestDto> Contests);
+public record ContestsPageDto(string EventName, List<ContestDto> Contests, bool ShowScores);
 public record CreateContestDto(string Name);
 public record UpdateContestDto(string Name);
 public record SetQuartetScoreDto(decimal? Score);

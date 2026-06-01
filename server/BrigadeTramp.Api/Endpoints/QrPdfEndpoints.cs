@@ -1,3 +1,4 @@
+using BrigadeTramp.Api.Auth;
 using BrigadeTramp.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using PdfSharp.Drawing;
@@ -10,8 +11,10 @@ public static class QrPdfEndpoints
 {
     public static void MapQrPdfEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/events/{id:int}/qr-pdf", async (int id, string? origin, HttpRequest request, AppDbContext db, IConfiguration config) =>
+        app.MapGet("/api/events/{id:int}/qr-pdf", async (int id, string? origin, HttpRequest request, AppDbContext db, IConfiguration config, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanViewEvent(ctx.User, id)) return Results.Forbid();
+
             var singers = await db.Singers
                 .Where(s => s.EventId == id)
                 .OrderBy(s => s.LastName).ThenBy(s => s.BadgeName)

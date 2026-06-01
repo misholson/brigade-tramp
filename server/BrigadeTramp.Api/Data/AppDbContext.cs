@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Contest> Contests => Set<Contest>();
     public DbSet<ContestQuartet> ContestQuartets => Set<ContestQuartet>();
     public DbSet<ContestQuartetSinger> ContestQuartetSingers => Set<ContestQuartetSinger>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<UserEventRole> UserEventRoles => Set<UserEventRole>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +45,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<Singer>()
             .Property(s => s.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<UserEventRole>()
+            .HasKey(r => new { r.UserId, r.EventId, r.Role });
+
+        modelBuilder.Entity<UserEventRole>()
+            .Property(r => r.Role)
             .HasConversion<string>();
     }
 }

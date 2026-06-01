@@ -29,3 +29,18 @@ export interface EventWithSingersDto {
   emailFooter: string;
   singers: SingerDto[];
 }
+
+export interface MyEventDto {
+  eventId: number;
+  eventName: string;
+  date: string;
+  endDate: string | null;
+  singerCode: string;
+}
+
+export interface EventUserRoleItemDto {
+  userId: number;
+  email: string;
+  name: string;
+  role: string;
+}

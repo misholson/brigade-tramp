@@ -17,6 +17,8 @@ interface Props {
   onContests: (eventId: number) => void;
   onSongs: (eventId: number) => void;
   onEmail: (event: EventWithSingersDto) => void;
+  onManageRoles: (eventId: number) => void;
+  canDelete?: boolean;
 }
 
 const Card = styled.div`
@@ -130,7 +132,7 @@ const EmptyMsg = styled.span`
   font-size: 0.9rem;
 `;
 
-export default function EventCard({ event, onEdit, onDelete, onImport, onDownloadPdf, onAddSinger, onEditSinger, onContests, onSongs, onEmail }: Props) {
+export default function EventCard({ event, onEdit, onDelete, onImport, onDownloadPdf, onAddSinger, onEditSinger, onContests, onSongs, onEmail, onManageRoles, canDelete }: Props) {
   const [expanded, setExpanded] = useState(false);
   const dispatch = useAppDispatch();
 
@@ -155,7 +157,8 @@ export default function EventCard({ event, onEdit, onDelete, onImport, onDownloa
           <Btn $variant="secondary" onClick={() => onSongs(event.id)}>Songs</Btn>
           <Btn $variant="primary" onClick={() => onDownloadPdf(event.id)}>QR PDF</Btn>
           <Btn $variant="secondary" onClick={() => onEmail(event)}>Email</Btn>
-          <Btn $variant="danger" onClick={() => onDelete(event.id)}>Delete</Btn>
+          <Btn $variant="secondary" onClick={() => onManageRoles(event.id)}>Roles</Btn>
+          {canDelete && <Btn $variant="danger" onClick={() => onDelete(event.id)}>Delete</Btn>}
         </Actions>
       </CardHeader>
 

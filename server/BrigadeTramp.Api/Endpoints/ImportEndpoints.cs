@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using BrigadeTramp.Api.Auth;
 using BrigadeTramp.Api.Data;
 using BrigadeTramp.Api.DTOs;
 using BrigadeTramp.Api.Models;
@@ -13,8 +14,10 @@ public static class ImportEndpoints
 {
     public static void MapImportEndpoints(this WebApplication app)
     {
-        app.MapPost("/api/events/{id:int}/import", async (int id, HttpRequest request, AppDbContext db) =>
+        app.MapPost("/api/events/{id:int}/import", async (int id, HttpRequest request, AppDbContext db, HttpContext ctx) =>
         {
+            if (!AuthHelpers.CanManageEvent(ctx.User, id)) return Results.Forbid();
+
             var ev = await db.Events.FindAsync(id);
             if (ev is null) return Results.NotFound();
 
