@@ -224,10 +224,12 @@ export default function AdminPage() {
   const [roleSearch, setRoleSearch] = useState('');
   const [roleSearchResults, setRoleSearchResults] = useState<{ id: number; email: string; name: string }[]>([]);
   const [roleSearching, setRoleSearching] = useState(false);
+  const [roleSearchDone, setRoleSearchDone] = useState(false);
   const [selectedRoleUserId, setSelectedRoleUserId] = useState<number | null>(null);
   const [selectedRoleUserName, setSelectedRoleUserName] = useState('');
   const [newRole, setNewRole] = useState('EventAdmin');
   const [roleAdding, setRoleAdding] = useState(false);
+  const [roleEmailSending, setRoleEmailSending] = useState(false);
 
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
@@ -331,6 +333,7 @@ export default function AdminPage() {
     setRolesModal({ eventId });
     setRoleSearch('');
     setRoleSearchResults([]);
+    setRoleSearchDone(false);
     setSelectedRoleUserId(null);
     setSelectedRoleUserName('');
     setNewRole('EventAdmin');
@@ -349,6 +352,7 @@ export default function AdminPage() {
     setRoleSearch(q);
     setSelectedRoleUserId(null);
     setSelectedRoleUserName('');
+    setRoleSearchDone(false);
     if (q.length < 2) { setRoleSearchResults([]); return; }
     setRoleSearching(true);
     try {
@@ -358,6 +362,7 @@ export default function AdminPage() {
       if (res.ok) setRoleSearchResults(await res.json());
     } finally {
       setRoleSearching(false);
+      setRoleSearchDone(true);
     }
   };
 
@@ -366,6 +371,7 @@ export default function AdminPage() {
     setSelectedRoleUserName(user.name || user.email);
     setRoleSearch(user.email);
     setRoleSearchResults([]);
+    setRoleSearchDone(false);
   };
 
   const handleAddRole = async () => {
@@ -377,15 +383,37 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
         body: JSON.stringify({ userId: selectedRoleUserId, eventId: rolesModal.eventId, role: newRole }),
       });
+      // Fire-and-forget notification email; don't block the UI on it
+      fetch(`${BASE_URL}/events/${rolesModal.eventId}/send-role-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+        body: JSON.stringify({ email: roleSearch, role: newRole }),
+      });
       const res = await fetch(`${BASE_URL}/events/${rolesModal.eventId}/users`, {
         headers: { Authorization: `Bearer ${token ?? ''}` },
       });
       if (res.ok) setEventRoles(await res.json());
       setRoleSearch('');
+      setRoleSearchDone(false);
       setSelectedRoleUserId(null);
       setSelectedRoleUserName('');
     } finally {
       setRoleAdding(false);
+    }
+  };
+
+  const handleSendInvite = async () => {
+    if (!rolesModal || !roleSearch.includes('@')) return;
+    setRoleEmailSending(true);
+    try {
+      const res = await fetch(`${BASE_URL}/events/${rolesModal.eventId}/send-role-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+        body: JSON.stringify({ email: roleSearch, role: newRole }),
+      });
+      if (!res.ok) alert('Failed to send invite. Check that ACS is configured on the server.');
+    } finally {
+      setRoleEmailSending(false);
     }
   };
 
@@ -698,6 +726,19 @@ export default function AdminPage() {
                 />
                 {selectedRoleUserId != null && (
                   <Hint>Selected: {selectedRoleUserName}</Hint>
+                )}
+                {roleSearchDone && selectedRoleUserId == null && roleSearchResults.length === 0 && roleSearch.includes('@') && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                    <Hint style={{ margin: 0 }}>No account found.</Hint>
+                    <Btn
+                      $variant="secondary"
+                      style={{ padding: '3px 10px', fontSize: '0.8rem' }}
+                      disabled={roleEmailSending}
+                      onClick={handleSendInvite}
+                    >
+                      {roleEmailSending ? 'Sending…' : 'Email Invite'}
+                    </Btn>
+                  </div>
                 )}
                 {roleSearching && (
                   <SearchDropdown style={{ padding: '6px 10px' }}>

@@ -5,3 +5,4 @@ public record SetSiteAdminDto(bool IsSiteAdmin);
 public record UpsertEventRoleDto(int UserId, int EventId, string Role);
 public record UserSearchResultDto(int Id, string Email, string Name);
 public record EventUserRoleItemDto(int UserId, string Email, string Name, string Role);
+public record SendRoleEmailDto(string Email, string Role);
