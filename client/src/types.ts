@@ -37,3 +37,10 @@ export interface MyEventDto {
   endDate: string | null;
   singerCode: string;
 }
+
+export interface EventUserRoleItemDto {
+  userId: number;
+  email: string;
+  name: string;
+  role: string;
+}

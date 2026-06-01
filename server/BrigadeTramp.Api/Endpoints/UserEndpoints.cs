@@ -76,6 +76,19 @@ public static class UserEndpoints
             return Results.Ok();
         }).RequireAuthorization();
 
+        app.MapGet("/api/events/{id:int}/users", async (int id, AppDbContext db, HttpContext ctx) =>
+        {
+            if (!AuthHelpers.CanManageEventRoles(ctx.User, id)) return Results.Forbid();
+
+            var roles = await db.UserEventRoles
+                .Where(r => r.EventId == id)
+                .Include(r => r.User)
+                .Select(r => new EventUserRoleItemDto(r.UserId, r.User.Email, r.User.Name, r.Role.ToString()))
+                .ToListAsync();
+
+            return Results.Ok(roles);
+        }).RequireAuthorization();
+
         app.MapDelete("/api/users/event-roles", async ([Microsoft.AspNetCore.Mvc.FromBody] UpsertEventRoleDto dto, AppDbContext db, HttpContext ctx) =>
         {
             if (!AuthHelpers.CanManageEventRoles(ctx.User, dto.EventId)) return Results.Forbid();

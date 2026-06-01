@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
 import { fetchEvents, createEvent, updateEvent, deleteEvent, addSinger, editSinger } from '../store/adminSlice';
 import { clearAuth, selectIsSiteAdmin } from '../store/authSlice';
-import type { EventWithSingersDto, SingerDto } from '../types';
+import type { EventWithSingersDto, SingerDto, EventUserRoleItemDto } from '../types';
 import EventCard from '../components/EventCard';
 import { BASE_URL } from '../api/apiClient';
 
@@ -109,6 +109,45 @@ const ModalActions = styled.div`
   margin-top: 16px;
 `;
 
+const RoleBadge = styled.span`
+  background: ${p => p.theme.colors.surfaceAlt};
+  border: 1px solid ${p => p.theme.colors.border};
+  color: ${p => p.theme.colors.textSecondary};
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+`;
+
+const RolesDivider = styled.div`
+  border-top: 1px solid ${p => p.theme.colors.border};
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const SearchDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: ${p => p.theme.colors.surface};
+  border: 1px solid ${p => p.theme.colors.inputBorder};
+  border-radius: 4px;
+  z-index: 10;
+`;
+
+const SearchDropdownItem = styled.div`
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  border-bottom: 1px solid ${p => p.theme.colors.borderLight};
+  color: ${p => p.theme.colors.text};
+  &:hover { background: ${p => p.theme.colors.surfaceHover}; }
+  &:last-child { border-bottom: none; }
+`;
+
 const Textarea = styled.textarea`
   padding: 9px;
   border: 1px solid ${p => p.theme.colors.inputBorder};
@@ -178,6 +217,17 @@ export default function AdminPage() {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmails, setSendingEmails] = useState(false);
+
+  const [rolesModal, setRolesModal] = useState<{ eventId: number } | null>(null);
+  const [eventRoles, setEventRoles] = useState<EventUserRoleItemDto[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [roleSearch, setRoleSearch] = useState('');
+  const [roleSearchResults, setRoleSearchResults] = useState<{ id: number; email: string; name: string }[]>([]);
+  const [roleSearching, setRoleSearching] = useState(false);
+  const [selectedRoleUserId, setSelectedRoleUserId] = useState<number | null>(null);
+  const [selectedRoleUserName, setSelectedRoleUserName] = useState('');
+  const [newRole, setNewRole] = useState('EventAdmin');
+  const [roleAdding, setRoleAdding] = useState(false);
 
   useEffect(() => { dispatch(fetchEvents()); }, [dispatch]);
 
@@ -277,6 +327,78 @@ export default function AdminPage() {
     setEmailModal({ eventId: ev.id, eventName: ev.name });
   };
 
+  const openRolesModal = async (eventId: number) => {
+    setRolesModal({ eventId });
+    setRoleSearch('');
+    setRoleSearchResults([]);
+    setSelectedRoleUserId(null);
+    setSelectedRoleUserName('');
+    setNewRole('EventAdmin');
+    setRolesLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/events/${eventId}/users`, {
+        headers: { Authorization: `Bearer ${token ?? ''}` },
+      });
+      if (res.ok) setEventRoles(await res.json());
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleRoleSearch = async (q: string) => {
+    setRoleSearch(q);
+    setSelectedRoleUserId(null);
+    setSelectedRoleUserName('');
+    if (q.length < 2) { setRoleSearchResults([]); return; }
+    setRoleSearching(true);
+    try {
+      const res = await fetch(`${BASE_URL}/users/search?email=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${token ?? ''}` },
+      });
+      if (res.ok) setRoleSearchResults(await res.json());
+    } finally {
+      setRoleSearching(false);
+    }
+  };
+
+  const selectRoleSearchUser = (user: { id: number; email: string; name: string }) => {
+    setSelectedRoleUserId(user.id);
+    setSelectedRoleUserName(user.name || user.email);
+    setRoleSearch(user.email);
+    setRoleSearchResults([]);
+  };
+
+  const handleAddRole = async () => {
+    if (!rolesModal || selectedRoleUserId == null) return;
+    setRoleAdding(true);
+    try {
+      await fetch(`${BASE_URL}/users/event-roles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+        body: JSON.stringify({ userId: selectedRoleUserId, eventId: rolesModal.eventId, role: newRole }),
+      });
+      const res = await fetch(`${BASE_URL}/events/${rolesModal.eventId}/users`, {
+        headers: { Authorization: `Bearer ${token ?? ''}` },
+      });
+      if (res.ok) setEventRoles(await res.json());
+      setRoleSearch('');
+      setSelectedRoleUserId(null);
+      setSelectedRoleUserName('');
+    } finally {
+      setRoleAdding(false);
+    }
+  };
+
+  const handleRemoveRole = async (item: EventUserRoleItemDto) => {
+    if (!rolesModal) return;
+    await fetch(`${BASE_URL}/users/event-roles`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+      body: JSON.stringify({ userId: item.userId, eventId: rolesModal.eventId, role: item.role }),
+    });
+    setEventRoles(prev => prev.filter(r => !(r.userId === item.userId && r.role === item.role)));
+  };
+
   const handleSendEmails = async () => {
     if (!emailModal) return;
     setSendingEmails(true);
@@ -302,6 +424,7 @@ export default function AdminPage() {
         <Title>Events</Title>
         <TopActions>
           {isSiteAdmin && <Btn $variant="primary" onClick={openCreateEvent}>+ New Event</Btn>}
+          <Btn $variant="secondary" onClick={() => navigate('/my-events')}>My Events</Btn>
           <Btn $variant="danger" onClick={() => { dispatch(clearAuth()); navigate('/login'); }}>
             Logout
           </Btn>
@@ -326,6 +449,7 @@ export default function AdminPage() {
           onContests={id => navigate(`/contests?eventId=${id}`)}
           onSongs={openSongs}
           onEmail={openEmailModal}
+          onManageRoles={openRolesModal}
           canDelete={isSiteAdmin}
         />
       ))}
@@ -531,6 +655,84 @@ export default function AdminPage() {
               >
                 {sendingEmails ? 'Sending…' : 'Send Emails'}
               </Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {/* Manage event roles modal */}
+      {rolesModal && (
+        <Overlay onClick={() => setRolesModal(null)}>
+          <ModalBox onClick={e => e.stopPropagation()} style={{ width: '480px' }}>
+            <ModalTitle>Event Roles</ModalTitle>
+
+            {/* Current assignments */}
+            {rolesLoading ? (
+              <StatusMsg>Loading…</StatusMsg>
+            ) : eventRoles.length === 0 ? (
+              <StatusMsg style={{ padding: '0 0 16px' }}>No roles assigned yet.</StatusMsg>
+            ) : (
+              <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {eventRoles.map(r => (
+                  <div key={`${r.userId}-${r.role}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.88rem' }}>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'inherit' }}>
+                      <strong>{r.name || r.email}</strong>
+                      {r.name && <Label as="span" style={{ marginLeft: 6, fontWeight: 400 }}>{r.email}</Label>}
+                    </span>
+                    <RoleBadge>{r.role}</RoleBadge>
+                    <Btn $variant="danger" style={{ padding: '3px 8px', fontSize: '0.75rem' }} onClick={() => handleRemoveRole(r)}>Remove</Btn>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new role */}
+            <RolesDivider>
+              <Label as="div">Add Role</Label>
+              <div style={{ position: 'relative' }}>
+                <Input
+                  placeholder="Search by email…"
+                  value={roleSearch}
+                  onChange={e => handleRoleSearch(e.target.value)}
+                  autoComplete="off"
+                />
+                {selectedRoleUserId != null && (
+                  <Hint>Selected: {selectedRoleUserName}</Hint>
+                )}
+                {roleSearching && (
+                  <SearchDropdown style={{ padding: '6px 10px' }}>
+                    <Label as="span">Searching…</Label>
+                  </SearchDropdown>
+                )}
+                {!roleSearching && roleSearchResults.length > 0 && (
+                  <SearchDropdown>
+                    {roleSearchResults.map(u => (
+                      <SearchDropdownItem key={u.id} onMouseDown={() => selectRoleSearchUser(u)}>
+                        <strong>{u.name}</strong>
+                        <Label as="span" style={{ marginLeft: 6, fontWeight: 400 }}>{u.email}</Label>
+                      </SearchDropdownItem>
+                    ))}
+                  </SearchDropdown>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Select value={newRole} onChange={e => setNewRole(e.target.value)} style={{ flex: 1 }}>
+                  <option value="EventAdmin">EventAdmin</option>
+                  <option value="EventUser">EventUser</option>
+                  <option value="ContestAdmin">ContestAdmin</option>
+                </Select>
+                <Btn
+                  $variant="primary"
+                  disabled={selectedRoleUserId == null || roleAdding}
+                  onClick={handleAddRole}
+                >
+                  {roleAdding ? 'Adding…' : 'Add'}
+                </Btn>
+              </div>
+            </RolesDivider>
+
+            <ModalActions>
+              <Btn $variant="secondary" onClick={() => setRolesModal(null)}>Close</Btn>
             </ModalActions>
           </ModalBox>
         </Overlay>
