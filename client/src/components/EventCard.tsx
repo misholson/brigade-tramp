@@ -13,7 +13,7 @@ interface Props {
   onImport: (id: number) => void;
   onDownloadPdf: (id: number) => void;
   onAddSinger: (eventId: number) => void;
-  onEditSinger: (singer: SingerDto) => void;
+  onEditSinger: (singer: SingerDto, readOnly: boolean) => void;
   onContests: (eventId: number) => void;
   onSongs: (eventId: number) => void;
   onEmail: (event: EventWithSingersDto) => void;
@@ -190,7 +190,11 @@ export default function EventCard({ event, onEdit, onDelete, onImport, onDownloa
                 ) : (
                   <span style={{ fontSize: '0.78rem' }}>{s.status}</span>
                 )}
-                {canManage && <Btn onClick={e => { e.stopPropagation(); onEditSinger(s); }}>Edit</Btn>}
+                {(canManage || canView) && (
+                  <Btn onClick={e => { e.stopPropagation(); onEditSinger(s, !canManage); }}>
+                    {canManage ? 'Edit' : 'View'}
+                  </Btn>
+                )}
               </SingerRow>
             ))
           )}

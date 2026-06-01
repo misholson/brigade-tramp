@@ -517,6 +517,10 @@ export default function ContestsPage() {
   const numericEventId = eventId ? parseInt(eventId, 10) : null;
   const canManageContest = numericEventId != null && (
     user?.isSiteAdmin ||
+    user?.eventRoles.some(r => r.eventId === numericEventId && r.role === 'ContestAdmin')
+  ) || false;
+  const canViewContests = numericEventId != null && (
+    user?.isSiteAdmin ||
     user?.eventRoles.some(r => r.eventId === numericEventId && ['EventAdmin', 'ContestAdmin'].includes(r.role))
   ) || false;
 
@@ -823,9 +827,10 @@ export default function ContestsPage() {
                       step="0.1"
                       value={scores2[quartet.id] ?? ''}
                       placeholder="—"
-                      onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
-                      onBlur={() => handleScore2Save(quartet.id)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
+                      readOnly={!canManageContest}
+                      onChange={e => canManageContest && setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                      onBlur={() => canManageContest && handleScore2Save(quartet.id)}
+                      onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleScore2Save(quartet.id); }}
                     />
                   </Td>
                 </tr>
@@ -854,9 +859,10 @@ export default function ContestsPage() {
                   step="0.1"
                   value={scores2[quartet.id] ?? ''}
                   placeholder="—"
-                  onChange={e => setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
-                  onBlur={() => handleScore2Save(quartet.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleScore2Save(quartet.id); }}
+                  readOnly={!canManageContest}
+                  onChange={e => canManageContest && setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                  onBlur={() => canManageContest && handleScore2Save(quartet.id)}
+                  onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleScore2Save(quartet.id); }}
                 />
               </MobileScoreRow>
               {PARTS.map(part => (
@@ -886,7 +892,7 @@ export default function ContestsPage() {
     );
   }
 
-  if (!loading && !canManageContest) {
+  if (!loading && !canViewContests) {
     return (
       <Container>
         <Msg $err>You do not have permission to view contests for this event.</Msg>
@@ -961,9 +967,10 @@ export default function ContestsPage() {
                     <NameInput
                       value={names[quartet.id] ?? ''}
                       placeholder="—"
-                      onChange={e => setNames(n => ({ ...n, [quartet.id]: e.target.value }))}
-                      onBlur={() => handleNameSave(quartet.id)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleNameSave(quartet.id); }}
+                      readOnly={!canManageContest}
+                      onChange={e => canManageContest && setNames(n => ({ ...n, [quartet.id]: e.target.value }))}
+                      onBlur={() => canManageContest && handleNameSave(quartet.id)}
+                      onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleNameSave(quartet.id); }}
                     />
                   </Td>
                   <Td>{fmt(quartet, idx, 'Tenor')}</Td>
@@ -999,9 +1006,11 @@ export default function ContestsPage() {
                 <MobileNameInput
                   value={names[quartet.id] ?? ''}
                   placeholder="Quartet name"
-                  onChange={e => setNames(n => ({ ...n, [quartet.id]: e.target.value }))}
-                  onBlur={() => handleNameSave(quartet.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleNameSave(quartet.id); }}
+                  readOnly={!canManageContest}
+                  $readOnly={!canManageContest}
+                  onChange={e => canManageContest && setNames(n => ({ ...n, [quartet.id]: e.target.value }))}
+                  onBlur={() => canManageContest && handleNameSave(quartet.id)}
+                  onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleNameSave(quartet.id); }}
                 />
               </MobileCardTop>
               {showScores && (

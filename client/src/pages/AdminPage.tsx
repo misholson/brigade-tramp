@@ -209,7 +209,7 @@ export default function AdminPage() {
   const [eventForm, setEventForm] = useState<EventFormState>({ name: '', date: '', endDate: '', allowBusyBee: false, emailFooter: '' });
 
   const [singerForm, setSingerForm] = useState<SingerFormState | null>(null);
-  const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number }) | null>(null);
+  const [editSingerForm, setEditSingerForm] = useState<(SingerFormState & { singerId: number; readOnly: boolean }) | null>(null);
   const [songsModal, setSongsModal] = useState<{ eventId: number; text: string; readOnly: boolean } | null>(null);
   const [songsSaving, setSongsSaving] = useState(false);
 
@@ -292,7 +292,7 @@ export default function AdminPage() {
     setSingerForm(null);
   };
 
-  const openEditSinger = (singer: SingerDto) => {
+  const openEditSinger = (singer: SingerDto, readOnly = false) => {
     setEditSingerForm({
       singerId: singer.id,
       eventId: 0,
@@ -302,6 +302,7 @@ export default function AdminPage() {
       part: singer.part,
       email: singer.email,
       status: singer.status,
+      readOnly,
     });
   };
 
@@ -634,11 +635,12 @@ export default function AdminPage() {
       {editSingerForm && (
         <Overlay onClick={() => setEditSingerForm(null)}>
           <ModalBox onClick={e => e.stopPropagation()}>
-            <ModalTitle>Edit Singer</ModalTitle>
+            <ModalTitle>{editSingerForm.readOnly ? 'Singer Details' : 'Edit Singer'}</ModalTitle>
             <Field>
               <Label>Badge Name</Label>
               <Input
                 value={editSingerForm.badgeName}
+                readOnly={editSingerForm.readOnly}
                 onChange={e => setEditSingerForm(f => f && ({ ...f, badgeName: e.target.value }))}
                 autoFocus
               />
@@ -647,6 +649,7 @@ export default function AdminPage() {
               <Label>First Name</Label>
               <Input
                 value={editSingerForm.firstName}
+                readOnly={editSingerForm.readOnly}
                 onChange={e => setEditSingerForm(f => f && ({ ...f, firstName: e.target.value }))}
               />
             </Field>
@@ -654,6 +657,7 @@ export default function AdminPage() {
               <Label>Last Name</Label>
               <Input
                 value={editSingerForm.lastName}
+                readOnly={editSingerForm.readOnly}
                 onChange={e => setEditSingerForm(f => f && ({ ...f, lastName: e.target.value }))}
               />
             </Field>
@@ -662,6 +666,7 @@ export default function AdminPage() {
               <Input
                 type="email"
                 value={editSingerForm.email}
+                readOnly={editSingerForm.readOnly}
                 onChange={e => setEditSingerForm(f => f && ({ ...f, email: e.target.value }))}
               />
             </Field>
@@ -669,6 +674,7 @@ export default function AdminPage() {
               <Label>Part</Label>
               <Select
                 value={editSingerForm.part}
+                disabled={editSingerForm.readOnly}
                 onChange={e => setEditSingerForm(f => f && ({ ...f, part: e.target.value }))}
               >
                 <option>Tenor</option>
@@ -681,6 +687,7 @@ export default function AdminPage() {
               <Label>Status</Label>
               <Select
                 value={editSingerForm.status}
+                disabled={editSingerForm.readOnly}
                 onChange={e => setEditSingerForm(f => f && ({ ...f, status: e.target.value }))}
               >
                 <option>Active</option>
@@ -689,10 +696,14 @@ export default function AdminPage() {
               </Select>
             </Field>
             <ModalActions>
-              <Btn $variant="secondary" onClick={() => setEditSingerForm(null)}>Cancel</Btn>
-              <Btn $variant="primary" onClick={handleSaveEditSinger} disabled={!editSingerForm.badgeName}>
-                Save
+              <Btn $variant="secondary" onClick={() => setEditSingerForm(null)}>
+                {editSingerForm.readOnly ? 'Close' : 'Cancel'}
               </Btn>
+              {!editSingerForm.readOnly && (
+                <Btn $variant="primary" onClick={handleSaveEditSinger} disabled={!editSingerForm.badgeName}>
+                  Save
+                </Btn>
+              )}
             </ModalActions>
           </ModalBox>
         </Overlay>
