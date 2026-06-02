@@ -5,6 +5,7 @@ import { lightTheme, darkTheme } from './theme';
 import MainPage from './pages/MainPage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
+import EventPage from './pages/EventPage';
 import ImportPage from './pages/ImportPage';
 import ContestsPage from './pages/ContestsPage';
 import SingerLandingPage from './pages/SingerLandingPage';
@@ -49,6 +50,11 @@ export default function App() {
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/events/:id" element={
+            <ProtectedRoute>
+              <EventPage />
             </ProtectedRoute>
           } />
           <Route path="/import" element={
