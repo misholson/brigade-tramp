@@ -9,6 +9,7 @@ import EventPage from './pages/EventPage';
 import ImportPage from './pages/ImportPage';
 import ContestsPage from './pages/ContestsPage';
 import SingerLandingPage from './pages/SingerLandingPage';
+import PdfMergePage from './pages/PdfMergePage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAppSelector } from './hooks/useAppDispatch';
 
@@ -65,6 +66,11 @@ export default function App() {
           <Route path="/contests" element={
             <ProtectedRoute>
               <ContestsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/pdf" element={
+            <ProtectedRoute>
+              <PdfMergePage />
             </ProtectedRoute>
           } />
           <Route path="*" element={<RootRedirect />} />

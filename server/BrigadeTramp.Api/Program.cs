@@ -156,5 +156,6 @@ app.MapQrPdfEndpoints();
 app.MapContestEndpoints();
 app.MapSongEndpoints();
 app.MapUserEndpoints();
+app.MapPdfMergeEndpoints();
 
 app.Run();
