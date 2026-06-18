@@ -271,7 +271,7 @@ export default function AdminPage() {
 
       {/* Create event modal */}
       {isCreatingEvent && (
-        <Overlay onClick={() => setIsCreatingEvent(false)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>New Event</ModalTitle>
             <Field>
@@ -341,7 +341,7 @@ export default function AdminPage() {
       )}
 
       {siteAdminModal && (
-        <Overlay onClick={() => setSiteAdminModal(false)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()} style={{ width: '480px' }}>
             <ModalTitle>Site Admins</ModalTitle>
 

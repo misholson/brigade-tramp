@@ -1105,7 +1105,7 @@ export default function ContestsPage() {
       ))}
 
       {showCreate && (
-        <Overlay onClick={() => setShowCreate(false)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>New Contest</ModalTitle>
             <Field>
@@ -1126,7 +1126,7 @@ export default function ContestsPage() {
       )}
 
       {editingName && (
-        <Overlay onClick={() => setEditingName(null)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Rename Contest</ModalTitle>
             <Field>
@@ -1147,7 +1147,7 @@ export default function ContestsPage() {
       )}
 
       {round2Modal !== null && (
-        <Overlay onClick={() => setRound2Modal(null)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Prepare Round 2</ModalTitle>
             <Field>
@@ -1185,7 +1185,7 @@ export default function ContestsPage() {
       )}
 
       {emailModal !== null && (
-        <Overlay onClick={() => setEmailModal(null)}>
+        <Overlay>
           <WideModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Email Quartets</ModalTitle>
             <Field>

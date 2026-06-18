@@ -147,7 +147,7 @@ export default function SongListCard({ songs }: Props) {
       </Card>
 
       {randomSong && (
-        <Overlay onClick={() => setRandomSong(null)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalLabel>Your Song</ModalLabel>
             <SongName>{randomSong}</SongName>

@@ -642,7 +642,7 @@ export default function EventPage() {
 
       {/* Edit event modal */}
       {editingEvent && (
-        <Overlay onClick={() => setEditingEvent(false)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Edit Event</ModalTitle>
             <Field>
@@ -686,7 +686,7 @@ export default function EventPage() {
 
       {/* Edit/view singer modal */}
       {editSingerForm && (
-        <Overlay onClick={() => setEditSingerForm(null)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>{editSingerForm.readOnly ? 'Singer Details' : 'Edit Singer'}</ModalTitle>
             <Field>
@@ -727,7 +727,7 @@ export default function EventPage() {
 
       {/* Add singer modal */}
       {singerForm && (
-        <Overlay onClick={() => setSingerForm(null)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Add Singer</ModalTitle>
             <Field>
@@ -768,7 +768,7 @@ export default function EventPage() {
 
       {/* Songs modal */}
       {songsModal && (
-        <Overlay onClick={() => setSongsModal(null)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Songs</ModalTitle>
             <Field>
@@ -792,7 +792,7 @@ export default function EventPage() {
 
       {/* Email singers modal */}
       {emailModal && (
-        <Overlay onClick={() => setEmailModal(false)}>
+        <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Email Singers</ModalTitle>
             <Field>
@@ -824,7 +824,7 @@ export default function EventPage() {
 
       {/* Manage event roles modal */}
       {rolesModal && (
-        <Overlay onClick={() => setRolesModal(false)}>
+        <Overlay>
           <WideModalBox onClick={e => e.stopPropagation()}>
             <ModalTitle>Event Roles</ModalTitle>
 
