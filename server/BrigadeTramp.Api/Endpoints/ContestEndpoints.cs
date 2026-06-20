@@ -60,10 +60,14 @@ public static class ContestEndpoints
 
         app.MapDelete("/api/contests/{id:int}", async (int id, AppDbContext db, HttpContext ctx) =>
         {
-            var contest = await db.Contests.FindAsync(id);
+            var contest = await db.Contests
+                .Include(c => c.Quartets).ThenInclude(q => q.SingerLinks)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (contest is null) return Results.NotFound();
             if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
                 return Results.Forbid();
+            db.ContestQuartetSingers.RemoveRange(contest.Quartets.SelectMany(q => q.SingerLinks));
+            db.ContestQuartets.RemoveRange(contest.Quartets);
             db.Contests.Remove(contest);
             await db.SaveChangesAsync();
             return Results.NoContent();
