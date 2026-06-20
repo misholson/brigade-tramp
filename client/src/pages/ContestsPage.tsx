@@ -469,6 +469,7 @@ interface ContestData {
   name: string;
   eventId: number;
   round2Count: number | null;
+  showToSingers: boolean;
   quartets: ContestQuartet[];
 }
 
@@ -662,6 +663,17 @@ export default function ContestsPage() {
       headers: { Authorization: authHeader },
     });
     load();
+  };
+
+  const handleToggleShowToSingers = async (id: number) => {
+    const res = await fetch(`${BASE_URL}/contests/${id}/show-to-singers`, {
+      method: 'PATCH',
+      headers: { Authorization: authHeader },
+    });
+    if (res.ok) {
+      const { showToSingers } = await res.json() as { showToSingers: boolean };
+      setContests(cs => cs.map(c => c.id === id ? { ...c, showToSingers } : c));
+    }
   };
 
   const handleGenerate = async (id: number) => {
@@ -1138,6 +1150,14 @@ export default function ContestsPage() {
               )}
               {contest.quartets.length > 0 && (
                 <Btn onClick={() => openEmailMcModal(contest.id)}>Email MC</Btn>
+              )}
+              {canManageContest && (
+                <Btn
+                  title={contest.showToSingers ? 'Visible on singer pages — click to hide' : 'Hidden from singer pages — click to show'}
+                  onClick={() => handleToggleShowToSingers(contest.id)}
+                >
+                  {contest.showToSingers ? '👁 Visible to Singers' : '🙈 Hidden from Singers'}
+                </Btn>
               )}
               {canManageContest && <Btn $variant="danger" onClick={() => handleDelete(contest.id)}>Delete</Btn>}
             </ContestActions>

@@ -4,7 +4,7 @@ public record ContestSingerDto(int Id, string BadgeName, string FirstName, strin
 public record ContestQuartetDto(int Id, string Name, decimal? Score, decimal? Score2, string? SongTitle, string? Song2Title, int SortOrder2, List<ContestSingerDto> Singers);
 public record ReorderContestDto(List<int> Ids);
 public record SetQuartetNameDto(string Name);
-public record ContestDto(int Id, string Name, int EventId, int? Round2Count, List<ContestQuartetDto> Quartets);
+public record ContestDto(int Id, string Name, int EventId, int? Round2Count, bool ShowToSingers, List<ContestQuartetDto> Quartets);
 public record ContestsPageDto(string EventName, List<ContestDto> Contests, bool ShowScores);
 public record CreateContestDto(string Name);
 public record UpdateContestDto(string Name);

@@ -366,13 +366,24 @@ public static class ContestEndpoints
             return Results.Ok();
         }).RequireAuthorization();
 
+        app.MapPatch("/api/contests/{id:int}/show-to-singers", async (int id, AppDbContext db, HttpContext ctx) =>
+        {
+            var contest = await db.Contests.FindAsync(id);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanManageContest(ctx.User, contest.EventId) && !AuthHelpers.IsSiteAdmin(ctx.User))
+                return Results.Forbid();
+            contest.ShowToSingers = !contest.ShowToSingers;
+            await db.SaveChangesAsync();
+            return Results.Ok(new { contest.ShowToSingers });
+        }).RequireAuthorization();
+
         app.MapGet("/api/singer/{code}/contests", async (string code, AppDbContext db) =>
         {
             var singer = await db.Singers.FirstOrDefaultAsync(s => s.Code == code);
             if (singer is null) return Results.NotFound();
 
             var contests = await db.Contests
-                .Where(c => c.EventId == singer.EventId)
+                .Where(c => c.EventId == singer.EventId && c.ShowToSingers)
                 .Include(c => c.Quartets)
                     .ThenInclude(q => q.SingerLinks)
                         .ThenInclude(sl => sl.Singer)
@@ -403,7 +414,7 @@ public static class ContestEndpoints
     }
 
     static ContestDto ToDto(Contest c, bool showScores) => new(
-        c.Id, c.Name, c.EventId, c.Round2Count,
+        c.Id, c.Name, c.EventId, c.Round2Count, c.ShowToSingers,
         c.Quartets
             .OrderBy(q => q.SortOrder)
             .Select(q => new ContestQuartetDto(

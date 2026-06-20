@@ -8,4 +8,5 @@ public class Contest
     public Event Event { get; set; } = null!;
     public List<ContestQuartet> Quartets { get; set; } = [];
     public int? Round2Count { get; set; }
+    public bool ShowToSingers { get; set; } = true;
 }
