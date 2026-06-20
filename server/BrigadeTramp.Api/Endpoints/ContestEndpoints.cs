@@ -263,6 +263,64 @@ public static class ContestEndpoints
             return Results.Ok();
         }).RequireAuthorization();
 
+        app.MapPost("/api/contests/{id:int}/email-mc", async (int id, EmailMcDto dto, AppDbContext db, HttpContext ctx, EmailService emailService) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) && dto.SingerId is null)
+                return Results.BadRequest("Provide an email address or a singer.");
+
+            var contest = await db.Contests
+                .Include(c => c.Quartets.OrderBy(q => q.SortOrder))
+                    .ThenInclude(q => q.SingerLinks)
+                        .ThenInclude(sl => sl.Singer)
+                .FirstOrDefaultAsync(c => c.Id == id);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanViewEvent(ctx.User, contest.EventId)) return Results.Forbid();
+
+            var ev = await db.Events.FindAsync(contest.EventId);
+            if (ev is null) return Results.NotFound();
+
+            var addresses = new List<string>();
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                addresses.Add(dto.Email.Trim());
+            if (dto.SingerId.HasValue)
+            {
+                var singer = await db.Singers.FindAsync(dto.SingerId.Value);
+                if (singer is not null && !string.IsNullOrWhiteSpace(singer.Email))
+                    addresses.Add(singer.Email);
+            }
+            addresses = [.. addresses.Distinct()];
+            if (addresses.Count == 0)
+                return Results.BadRequest("No valid email address found.");
+
+            string[] partOrder = ["Tenor", "Lead", "Baritone", "Bass"];
+            var lines = new List<string>
+            {
+                $"{ev.Name} — {contest.Name}",
+                "",
+                "Quartet Order:",
+                ""
+            };
+            int num = 1;
+            foreach (var quartet in contest.Quartets.OrderBy(q => q.SortOrder))
+            {
+                lines.Add($"{num}. {quartet.Name}");
+                if (!string.IsNullOrWhiteSpace(quartet.SongTitle))
+                    lines.Add($"   Song: {quartet.SongTitle}");
+                foreach (var part in partOrder)
+                {
+                    var sl = quartet.SingerLinks.FirstOrDefault(sl => sl.Singer.Part.ToString() == part);
+                    lines.Add($"   {part}: {(sl is not null ? $"{sl.Singer.BadgeName} {sl.Singer.LastName}" : "—")}");
+                }
+                lines.Add("");
+                num++;
+            }
+
+            var subject = $"{ev.Name} — {contest.Name} Run Order";
+            var body = string.Join("\n", lines);
+            await emailService.SendAsync(addresses, subject, body, AuthHelpers.GetEmail(ctx.User));
+            return Results.Ok();
+        }).RequireAuthorization();
+
         app.MapPost("/api/contests/{id:int}/send-emails", async (int id, SendEmailsDto dto, AppDbContext db, HttpContext ctx, EmailService emailService) =>
         {
             var contest = await db.Contests

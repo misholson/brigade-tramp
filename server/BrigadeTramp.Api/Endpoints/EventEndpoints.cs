@@ -56,6 +56,17 @@ public static class EventEndpoints
             return Results.Created($"/api/events/{ev.Id}", new EventDto(ev.Id, ev.Name, ev.Date, ev.EndDate, ev.AllowBusyBee, ev.EmailFooter));
         });
 
+        group.MapGet("/{id:int}/singers", async (int id, AppDbContext db, HttpContext ctx) =>
+        {
+            if (!AuthHelpers.CanViewEvent(ctx.User, id)) return Results.Forbid();
+            var singers = await db.Singers
+                .Where(s => s.EventId == id && s.Status != SingerStatus.Inactive)
+                .OrderBy(s => s.BadgeName).ThenBy(s => s.LastName)
+                .Select(s => new { s.Id, s.BadgeName, s.LastName, s.Email })
+                .ToListAsync();
+            return Results.Ok(singers);
+        });
+
         group.MapPut("/{id:int}", async (int id, UpdateEventDto dto, AppDbContext db, HttpContext ctx) =>
         {
             if (!AuthHelpers.CanManageEvent(ctx.User, id)) return Results.Forbid();

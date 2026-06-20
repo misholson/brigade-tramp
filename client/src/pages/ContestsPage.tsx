@@ -513,6 +513,11 @@ export default function ContestsPage() {
   const [scoringModal, setScoringModal] = useState<{ quartets: ContestQuartet[]; index: number; round: 1 | 2 } | null>(null);
   const [judgeScores, setJudgeScores] = useState<[string, string, string, string]>(['', '', '', '']);
   const judgeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
+  const [emailMcModal, setEmailMcModal] = useState<number | null>(null);
+  const [mcEmail, setMcEmail] = useState('');
+  const [mcSingerId, setMcSingerId] = useState<number | ''>('');
+  const [mcSingers, setMcSingers] = useState<{ id: number; badgeName: string; lastName: string; email: string }[]>([]);
+  const [sendingMcEmail, setSendingMcEmail] = useState(false);
 
   const numericEventId = eventId ? parseInt(eventId, 10) : null;
   const canManageContest = numericEventId != null && (
@@ -559,6 +564,41 @@ export default function ContestsPage() {
       setToast('Emails have been scheduled successfully.');
     } finally {
       setSendingEmails(false);
+    }
+  };
+
+  const openEmailMcModal = async (contestId: number) => {
+    setMcEmail('');
+    setMcSingerId('');
+    setEmailMcModal(contestId);
+    if (numericEventId) {
+      const res = await fetch(`${BASE_URL}/events/${numericEventId}/singers`, {
+        headers: { Authorization: authHeader },
+      });
+      if (res.ok) setMcSingers(await res.json());
+    }
+  };
+
+  const handleSendMcEmail = async () => {
+    if (emailMcModal === null) return;
+    setSendingMcEmail(true);
+    try {
+      const res = await fetch(`${BASE_URL}/contests/${emailMcModal}/email-mc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({
+          email: mcEmail.trim() || null,
+          singerId: mcSingerId !== '' ? mcSingerId : null,
+        }),
+      });
+      if (!res.ok) {
+        alert('Failed to send email. Check that ACS is configured on the server.');
+        return;
+      }
+      setEmailMcModal(null);
+      setToast('MC email sent successfully.');
+    } finally {
+      setSendingMcEmail(false);
     }
   };
 
@@ -1096,6 +1136,9 @@ export default function ContestsPage() {
                   Prepare Round 2
                 </Btn>
               )}
+              {contest.quartets.length > 0 && (
+                <Btn onClick={() => openEmailMcModal(contest.id)}>Email MC</Btn>
+              )}
               {canManageContest && <Btn $variant="danger" onClick={() => handleDelete(contest.id)}>Delete</Btn>}
             </ContestActions>
           </ContestHeader>
@@ -1283,6 +1326,49 @@ export default function ContestsPage() {
           </Overlay>
         );
       })()}
+
+      {emailMcModal !== null && (
+        <Overlay>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Email MC</ModalTitle>
+            <Field>
+              <Label>Email address</Label>
+              <Input
+                autoFocus
+                type="email"
+                placeholder="mc@example.com"
+                value={mcEmail}
+                onChange={e => setMcEmail(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <Label>Or select a singer</Label>
+              <select
+                value={mcSingerId}
+                onChange={e => setMcSingerId(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                style={{ padding: '9px', borderRadius: '5px', fontSize: '0.95rem', width: '100%' }}
+              >
+                <option value="">— choose a singer —</option>
+                {mcSingers.map(s => (
+                  <option key={s.id} value={s.id} disabled={!s.email}>
+                    {s.badgeName} {s.lastName}{s.email ? '' : ' (no email)'}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <ModalActions>
+              <Btn onClick={() => setEmailMcModal(null)}>Cancel</Btn>
+              <Btn
+                $variant="primary"
+                disabled={sendingMcEmail || (!mcEmail.trim() && mcSingerId === '')}
+                onClick={handleSendMcEmail}
+              >
+                {sendingMcEmail ? 'Sending…' : 'Send'}
+              </Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
 
       {toast && <Toast>{toast}</Toast>}
     </Container>
