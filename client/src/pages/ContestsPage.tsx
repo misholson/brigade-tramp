@@ -1312,9 +1312,7 @@ export default function ContestsPage() {
                 Score Quartets ({scoringModal.index + 1} of {scoringModal.quartets.length})
               </ModalTitle>
               <ScoringQuartetName>{names[quartet.id] ?? quartet.name}</ScoringQuartetName>
-              {quartet.songTitle
-                ? <ScoringSong>{quartet.songTitle}</ScoringSong>
-                : <ScoringSong>&nbsp;</ScoringSong>}
+              {(() => { const song = scoringModal.round === 2 ? quartet.song2Title : quartet.songTitle; return song ? <ScoringSong>{song}</ScoringSong> : <ScoringSong>&nbsp;</ScoringSong>; })()}
               <JudgeGrid>
                 {([0, 1, 2, 3] as const).map(i => (
                   <Field key={i}>
