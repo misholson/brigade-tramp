@@ -795,10 +795,15 @@ export default function ContestsPage() {
   const renderRound2 = (contest: ContestData) => {
     if (!contest.round2Count) return null;
 
-    const baseTop = [...contest.quartets]
+    const allScored = [...contest.quartets]
       .filter(q => q.score != null)
-      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-      .slice(0, contest.round2Count);
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    const cutoffScore = contest.round2Count && allScored.length >= contest.round2Count
+      ? allScored[contest.round2Count - 1].score
+      : null;
+    const baseTop = cutoffScore != null
+      ? allScored.filter(q => (q.score ?? 0) >= cutoffScore)
+      : allScored.slice(0, contest.round2Count ?? allScored.length);
 
     const handleR2Randomize = async () => {
       const ids = [...baseTop].sort(() => Math.random() - 0.5).map(q => q.id);

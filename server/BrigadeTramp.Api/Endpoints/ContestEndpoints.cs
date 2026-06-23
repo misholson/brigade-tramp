@@ -203,11 +203,14 @@ public static class ContestEndpoints
                     .Select(s => s.Title)
                     .ToListAsync();
 
-                var topQuartets = contest.Quartets
+                var scoredQuartets = contest.Quartets
                     .Where(q => q.Score.HasValue)
                     .OrderByDescending(q => q.Score)
-                    .Take(dto.Count)
                     .ToList();
+                var cutoffScore = scoredQuartets.Count >= dto.Count ? scoredQuartets[dto.Count - 1].Score : null;
+                var topQuartets = cutoffScore.HasValue
+                    ? scoredQuartets.Where(q => q.Score >= cutoffScore).ToList()
+                    : scoredQuartets;
 
                 if (songTitles.Count > 0)
                 {
@@ -298,11 +301,14 @@ public static class ContestEndpoints
             string roundLabel;
             if (dto.Round == 2 && contest.Round2Count.HasValue)
             {
-                var top = contest.Quartets
+                var allScored = contest.Quartets
                     .Where(q => q.Score.HasValue)
                     .OrderByDescending(q => q.Score)
-                    .Take(contest.Round2Count.Value)
                     .ToList();
+                var r2CutoffScore = allScored.Count >= contest.Round2Count.Value ? allScored[contest.Round2Count.Value - 1].Score : null;
+                var top = r2CutoffScore.HasValue
+                    ? allScored.Where(q => q.Score >= r2CutoffScore).ToList()
+                    : allScored;
                 orderedQuartets = top.All(q => q.SortOrder2 > 0)
                     ? top.OrderBy(q => q.SortOrder2)
                     : (IEnumerable<ContestQuartet>)top;
