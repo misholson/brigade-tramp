@@ -515,6 +515,7 @@ export default function ContestsPage() {
   const [judgeScores, setJudgeScores] = useState<[string, string, string, string]>(['', '', '', '']);
   const judgeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
   const [emailMcModal, setEmailMcModal] = useState<number | null>(null);
+  const [mcRound, setMcRound] = useState<1 | 2>(1);
   const [mcEmail, setMcEmail] = useState('');
   const [mcSingerId, setMcSingerId] = useState<number | ''>('');
   const [mcSingers, setMcSingers] = useState<{ id: number; badgeName: string; lastName: string; email: string }[]>([]);
@@ -568,9 +569,10 @@ export default function ContestsPage() {
     }
   };
 
-  const openEmailMcModal = async (contestId: number) => {
+  const openEmailMcModal = async (contestId: number, round: 1 | 2 = 1) => {
     setMcEmail('');
     setMcSingerId('');
+    setMcRound(round);
     setEmailMcModal(contestId);
     if (numericEventId) {
       const res = await fetch(`${BASE_URL}/events/${numericEventId}/singers`, {
@@ -590,6 +592,7 @@ export default function ContestsPage() {
         body: JSON.stringify({
           email: mcEmail.trim() || null,
           singerId: mcSingerId !== '' ? mcSingerId : null,
+          round: mcRound,
         }),
       });
       if (!res.ok) {
@@ -843,6 +846,7 @@ export default function ContestsPage() {
           <span>Round 2 — Top {contest.round2Count}</span>
           <div style={{ display: 'flex', gap: 6 }}>
             {showScores && <SmallBtn onClick={() => openScoringModalRound2(top)}>Score Quartets</SmallBtn>}
+            <SmallBtn onClick={() => openEmailMcModal(contest.id, 2)}>Email MC</SmallBtn>
             {canManageContest && <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>}
           </div>
         </Round2SectionHeader>
@@ -1350,7 +1354,7 @@ export default function ContestsPage() {
       {emailMcModal !== null && (
         <Overlay>
           <ModalBox onClick={e => e.stopPropagation()}>
-            <ModalTitle>Email MC</ModalTitle>
+            <ModalTitle>Email MC — {mcRound === 2 ? 'Round 2' : 'Round 1'}</ModalTitle>
             <Field>
               <Label>Email address</Label>
               <Input

@@ -293,19 +293,41 @@ public static class ContestEndpoints
                 return Results.BadRequest("No valid email address found.");
 
             string[] partOrder = ["Tenor", "Lead", "Baritone", "Bass"];
+
+            IEnumerable<ContestQuartet> orderedQuartets;
+            string roundLabel;
+            if (dto.Round == 2 && contest.Round2Count.HasValue)
+            {
+                var top = contest.Quartets
+                    .Where(q => q.Score.HasValue)
+                    .OrderByDescending(q => q.Score)
+                    .Take(contest.Round2Count.Value)
+                    .ToList();
+                orderedQuartets = top.All(q => q.SortOrder2 > 0)
+                    ? top.OrderBy(q => q.SortOrder2)
+                    : (IEnumerable<ContestQuartet>)top;
+                roundLabel = "Round 2";
+            }
+            else
+            {
+                orderedQuartets = contest.Quartets.OrderBy(q => q.SortOrder);
+                roundLabel = "Round 1";
+            }
+
             var lines = new List<string>
             {
-                $"{ev.Name} — {contest.Name}",
+                $"{ev.Name} — {contest.Name} ({roundLabel})",
                 "",
                 "Quartet Order:",
                 ""
             };
             int num = 1;
-            foreach (var quartet in contest.Quartets.OrderBy(q => q.SortOrder))
+            foreach (var quartet in orderedQuartets)
             {
                 lines.Add($"{num}. {quartet.Name}");
-                if (!string.IsNullOrWhiteSpace(quartet.SongTitle))
-                    lines.Add($"   Song: {quartet.SongTitle}");
+                var songTitle = dto.Round == 2 ? quartet.Song2Title : quartet.SongTitle;
+                if (!string.IsNullOrWhiteSpace(songTitle))
+                    lines.Add($"   Song: {songTitle}");
                 foreach (var part in partOrder)
                 {
                     var sl = quartet.SingerLinks.FirstOrDefault(sl => sl.Singer.Part.ToString() == part);
@@ -315,7 +337,7 @@ public static class ContestEndpoints
                 num++;
             }
 
-            var subject = $"{ev.Name} — {contest.Name} Run Order";
+            var subject = $"{ev.Name} — {contest.Name} {roundLabel} Run Order";
             var body = string.Join("\n", lines);
             await emailService.SendAsync(addresses, subject, body, AuthHelpers.GetEmail(ctx.User));
             return Results.Ok();

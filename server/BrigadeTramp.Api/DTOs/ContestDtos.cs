@@ -15,4 +15,4 @@ public record SendEmailsDto(string Subject, string Body);
 public record PublicQuartetSingerDto(string BadgeName, string LastName, string Part, string Email);
 public record PublicQuartetDto(string Name, List<PublicQuartetSingerDto> Singers);
 public record PublicContestDto(string Name, List<PublicQuartetDto> Quartets);
-public record EmailMcDto(string? Email, int? SingerId);
+public record EmailMcDto(string? Email, int? SingerId, int Round = 1);
