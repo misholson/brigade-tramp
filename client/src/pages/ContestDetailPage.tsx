@@ -803,6 +803,75 @@ export default function ContestDetailPage() {
     }
   };
 
+  const handleDownloadCsv = () => {
+    if (!contest) return;
+
+    const esc = (v: string | number | null) => {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const row = (...cells: (string | number | null)[]) => cells.map(esc).join(',');
+    const singerName = (q: ContestQuartet, part: string) => {
+      const s = q.singers.find(s => s.part === part);
+      return s ? `${s.badgeName} ${s.lastName}` : '';
+    };
+
+    const lines: string[] = [];
+    const header = row('#', 'Name', 'Tenor', 'Lead', 'Baritone', 'Bass', 'Song');
+
+    lines.push('Round 1');
+    lines.push(header);
+    [...contest.quartets]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach(q => lines.push(row(
+        q.sortOrder + 1,
+        names[q.id] ?? q.name,
+        singerName(q, 'Tenor'),
+        singerName(q, 'Lead'),
+        singerName(q, 'Baritone'),
+        singerName(q, 'Bass'),
+        q.songTitle ?? '',
+      )));
+
+    if (contest.round2Count) {
+      const allScored = [...contest.quartets]
+        .filter(q => q.score != null)
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      const cutoffScore = allScored.length >= contest.round2Count
+        ? allScored[contest.round2Count - 1].score : null;
+      const baseTop = cutoffScore != null
+        ? allScored.filter(q => (q.score ?? 0) >= cutoffScore)
+        : allScored.slice(0, contest.round2Count);
+      const top = baseTop.length > 0 && baseTop.every(q => q.sortOrder2 > 0)
+        ? [...baseTop].sort((a, b) => a.sortOrder2 - b.sortOrder2)
+        : baseTop;
+
+      if (top.length > 0) {
+        lines.push('');
+        lines.push('Round 2');
+        lines.push(header);
+        top.forEach((q, i) => lines.push(row(
+          i + 1,
+          names[q.id] ?? q.name,
+          singerName(q, 'Tenor'),
+          singerName(q, 'Lead'),
+          singerName(q, 'Baritone'),
+          singerName(q, 'Bass'),
+          q.song2Title ?? '',
+        )));
+      }
+    }
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${contest.name.replace(/[^a-z0-9]/gi, '_')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const toggleR1Sort = (col: string) =>
     setR1Sort(prev => {
       const dir = prev?.col === col ? (prev.dir === 'asc' ? 'desc' : 'asc') : 'asc';
@@ -1181,6 +1250,9 @@ export default function ContestDetailPage() {
           )}
           {contest && contest.quartets.length > 0 && (
             <Btn onClick={() => openEmailMcModal(1)}>Email MC</Btn>
+          )}
+          {contest && contest.quartets.length > 0 && (
+            <Btn onClick={handleDownloadCsv}>Download CSV</Btn>
           )}
           {canManageContest && contest && (
             <Btn
