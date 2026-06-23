@@ -8,6 +8,7 @@ import AdminPage from './pages/AdminPage';
 import EventPage from './pages/EventPage';
 import ImportPage from './pages/ImportPage';
 import ContestsPage from './pages/ContestsPage';
+import ContestDetailPage from './pages/ContestDetailPage';
 import SingerLandingPage from './pages/SingerLandingPage';
 import PdfMergePage from './pages/PdfMergePage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -66,6 +67,11 @@ export default function App() {
           <Route path="/contests" element={
             <ProtectedRoute>
               <ContestsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/contests/:contestId" element={
+            <ProtectedRoute>
+              <ContestDetailPage />
             </ProtectedRoute>
           } />
           <Route path="/pdf" element={

@@ -1,0 +1,1403 @@
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import styled from 'styled-components';
+import { useAppSelector } from '../hooks/useAppDispatch';
+import { BASE_URL } from '../api/apiClient';
+
+const BREAKPOINT = '640px';
+
+const Container = styled.div`
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 16px;
+  box-sizing: border-box;
+`;
+
+const Header = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+`;
+
+const TitleBlock = styled.div``;
+
+const Title = styled.h1`
+  font-size: 1.5rem;
+  margin: 0;
+`;
+
+const Sub = styled.div`
+  font-size: 0.85rem;
+  color: ${p => p.theme.colors.textMuted};
+  margin-top: 3px;
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+`;
+
+const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'secondary' }>`
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: ${p =>
+    p.$variant === 'primary' ? '#1565c0'
+    : p.$variant === 'danger' ? '#c62828'
+    : '#757575'};
+  color: #fff;
+  &:hover { opacity: 0.85; }
+  &:disabled { opacity: 0.5; cursor: default; }
+`;
+
+const DesktopOnly = styled.div`
+  display: none;
+  @media (min-width: ${BREAKPOINT}) { display: block; }
+`;
+
+const MobileOnly = styled.div`
+  display: block;
+  @media (min-width: ${BREAKPOINT}) { display: none; }
+`;
+
+const QuartetTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+`;
+
+const Th = styled.th<{ $part?: string; $sortable?: boolean }>`
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-bottom: 2px solid ${p => p.theme.colors.border};
+  white-space: nowrap;
+  color: ${p => p.$part
+    ? (p.theme.parts[p.$part as 'Tenor' | 'Lead' | 'Baritone' | 'Bass']?.labelColor ?? p.theme.colors.textSecondary)
+    : p.theme.colors.textSecondary};
+  cursor: ${p => p.$sortable ? 'pointer' : 'default'};
+  user-select: ${p => p.$sortable ? 'none' : 'auto'};
+  &:hover { opacity: ${p => p.$sortable ? 0.75 : 1}; }
+`;
+
+const Td = styled.td`
+  padding: 6px 10px;
+  border-bottom: 1px solid ${p => p.theme.colors.borderLight};
+  white-space: nowrap;
+  color: ${p => p.theme.colors.text};
+`;
+
+const NameInput = styled.input`
+  width: 120px;
+  padding: 3px 6px;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
+`;
+
+const ScoreInput = styled.input`
+  width: 72px;
+  padding: 3px 6px;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: right;
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
+`;
+
+const MobileQuartetCard = styled.div`
+  border-top: 1px solid ${p => p.theme.colors.border};
+  padding: 10px 14px;
+`;
+
+const MobileCardTop = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+`;
+
+const MobileNum = styled.span`
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: ${p => p.theme.colors.textMuted};
+  flex-shrink: 0;
+`;
+
+const MobileNameInput = styled.input<{ $readOnly?: boolean }>`
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
+  border-radius: 4px;
+  font-size: 0.88rem;
+  background: ${p => p.$readOnly ? p.theme.colors.surfaceAlt : p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  cursor: ${p => p.$readOnly ? 'default' : 'text'};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
+`;
+
+const MobileScoreRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+`;
+
+const MobileScoreLabel = styled.span`
+  font-size: 0.82rem;
+  color: ${p => p.theme.colors.textMuted};
+`;
+
+const MobileScoreInput = styled.input`
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
+  border-radius: 4px;
+  font-size: 0.88rem;
+  text-align: right;
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
+`;
+
+const MobileSingerRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+`;
+
+const PartDot = styled.span<{ $part: string }>`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: ${p => p.theme.parts[p.$part as 'Tenor' | 'Lead' | 'Baritone' | 'Bass']?.dark ?? '#888'};
+`;
+
+const MobileSingerName = styled.span`
+  font-size: 0.88rem;
+`;
+
+const CheckRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  color: ${p => p.theme.colors.text};
+`;
+
+const Round2Section = styled.div`
+  border-top: 2px solid ${p => p.theme.colors.link};
+  background: ${p => p.theme.colors.accentSurface};
+`;
+
+const Round2SectionHeader = styled.div`
+  padding: 6px 10px 6px 16px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: ${p => p.theme.colors.link};
+  background: ${p => p.theme.colors.accentHeader};
+  border-bottom: 1px solid ${p => p.theme.colors.accentBorder};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const SectionToolbar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid ${p => p.theme.colors.borderLight};
+  background: ${p => p.theme.colors.surfaceHover};
+`;
+
+const SmallBtn = styled.button`
+  padding: 3px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #757575;
+  color: #fff;
+  &:hover { opacity: 0.85; }
+`;
+
+const R1Score = styled.span`
+  color: ${p => p.theme.colors.textMuted};
+  font-size: 0.82rem;
+`;
+
+const EmptyMsg = styled.div`
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  color: ${p => p.theme.colors.textMuted};
+`;
+
+const Msg = styled.div<{ $err?: boolean }>`
+  padding: 20px;
+  text-align: center;
+  color: ${p => p.$err ? '#c62828' : p.theme.colors.textMuted};
+`;
+
+const ContestCard = styled.div`
+  border: 1px solid ${p => p.theme.colors.border};
+  border-radius: 8px;
+  margin-bottom: 14px;
+  background: ${p => p.theme.colors.surface};
+  overflow: hidden;
+`;
+
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+`;
+
+const ModalBox = styled.div`
+  background: ${p => p.theme.colors.surface};
+  border-radius: 10px;
+  padding: 28px;
+  width: 380px;
+  max-width: 95vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+`;
+
+const WideModalBox = styled(ModalBox)`
+  width: 520px;
+`;
+
+const Textarea = styled.textarea`
+  padding: 9px;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
+  border-radius: 5px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 150px;
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
+`;
+
+const HelpCard = styled.div`
+  background: ${p => p.theme.colors.accentSurface};
+  border: 1px solid ${p => p.theme.colors.accentBorder};
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  color: ${p => p.theme.colors.textSecondary};
+  margin-bottom: 14px;
+`;
+
+const HelpTitle = styled.div`
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: ${p => p.theme.colors.link};
+`;
+
+const HelpGrid = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+`;
+
+const HelpToken = styled.code`
+  color: ${p => p.theme.colors.link};
+  font-size: 0.75rem;
+  white-space: nowrap;
+`;
+
+const JudgeGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+  & > * { min-width: 0; }
+  input { width: 100%; box-sizing: border-box; }
+`;
+
+const JudgeTotal = styled.div`
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: ${p => p.theme.colors.textSecondary};
+  margin-bottom: 14px;
+`;
+
+const ScoringQuartetName = styled.div`
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+`;
+
+const ScoringSong = styled.div`
+  font-size: 0.9rem;
+  color: ${p => p.theme.colors.textMuted};
+  margin-bottom: 18px;
+`;
+
+const Toast = styled.div`
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2e7d32;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  white-space: nowrap;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0 0 18px;
+  font-size: 1.1rem;
+`;
+
+const Field = styled.div`
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const Label = styled.label`
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: ${p => p.theme.colors.textSecondary};
+`;
+
+const Input = styled.input`
+  padding: 9px;
+  border: 1px solid ${p => p.theme.colors.inputBorder};
+  border-radius: 5px;
+  font-size: 0.95rem;
+  background: ${p => p.theme.colors.inputBg};
+  color: ${p => p.theme.colors.text};
+  &:focus { outline: 2px solid ${p => p.theme.colors.focus}; border-color: transparent; }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+`;
+
+interface ContestSinger {
+  id: number;
+  badgeName: string;
+  firstName: string;
+  lastName: string;
+  part: string;
+}
+
+interface ContestQuartet {
+  id: number;
+  name: string;
+  score: number | null;
+  score2: number | null;
+  songTitle: string | null;
+  song2Title: string | null;
+  sortOrder: number;
+  sortOrder2: number;
+  singers: ContestSinger[];
+}
+
+interface ContestData {
+  id: number;
+  name: string;
+  eventId: number;
+  round2Count: number | null;
+  showToSingers: boolean;
+  quartets: ContestQuartet[];
+}
+
+const PARTS = ['Tenor', 'Lead', 'Baritone', 'Bass'];
+
+type SortState = { col: string; dir: 'asc' | 'desc' };
+
+function applySortQuartets(quartets: ContestQuartet[], sort: SortState | undefined): ContestQuartet[] {
+  if (!sort) return quartets;
+  const { col, dir } = sort;
+  const mult = dir === 'asc' ? 1 : -1;
+  const numCmp = (a: number | null, b: number | null) => {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return a - b;
+  };
+  return [...quartets].sort((a, b) => {
+    let cmp = 0;
+    switch (col) {
+      case 'name': cmp = a.name.localeCompare(b.name); break;
+      case 'tenor': case 'lead': case 'baritone': case 'bass': {
+        const part = col[0].toUpperCase() + col.slice(1);
+        cmp = (a.singers.find(s => s.part === part)?.badgeName ?? '')
+          .localeCompare(b.singers.find(s => s.part === part)?.badgeName ?? '');
+        break;
+      }
+      case 'order': cmp = a.sortOrder - b.sortOrder; break;
+      case 'song': cmp = (a.songTitle ?? '').localeCompare(b.songTitle ?? ''); break;
+      case 'song2': cmp = (a.song2Title ?? '').localeCompare(b.song2Title ?? ''); break;
+      case 'score': cmp = numCmp(a.score, b.score); break;
+      case 'score2': cmp = numCmp(a.score2, b.score2); break;
+      case 'total': {
+        const aT = a.score != null && a.score2 != null ? a.score + a.score2 : null;
+        const bT = b.score != null && b.score2 != null ? b.score + b.score2 : null;
+        cmp = numCmp(aT, bT);
+        break;
+      }
+    }
+    return mult * cmp;
+  });
+}
+
+const DEFAULT_EMAIL_SUBJECT = '{{event}} {{contest}} Quartet Assignment: {{quartet}}';
+const DEFAULT_EMAIL_BODY = `Your quartet assignment for the {{contest}} at {{event}} is below. If you are assigned to two quartets you may receive two e-mails, please watch your e-mail for this possibility:
+
+Tenor: {{tenor}} - {{tenorEmail}}
+Lead: {{lead}} - {{leadEmail}}
+Baritone: {{baritone}} - {{baritoneEmail}}
+Bass: {{bass}} - {{bassEmail}}`;
+
+export default function ContestDetailPage() {
+  const { contestId } = useParams<{ contestId: string }>();
+  const navigate = useNavigate();
+  const token = useAppSelector(s => s.auth.token);
+  const user = useAppSelector(s => s.auth.user);
+
+  const [eventName, setEventName] = useState('');
+  const [showScores, setShowScores] = useState(false);
+  const [contest, setContest] = useState<ContestData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<{ id: number; name: string } | null>(null);
+  const [scores, setScores] = useState<Record<number, string>>({});
+  const [scores2, setScores2] = useState<Record<number, string>>({});
+  const [names, setNames] = useState<Record<number, string>>({});
+  const [generating, setGenerating] = useState(false);
+  const [round2Modal, setRound2Modal] = useState(false);
+  const [round2CountStr, setRound2CountStr] = useState('4');
+  const [round2AssignSongs, setRound2AssignSongs] = useState(true);
+  const [preparingRound2, setPreparingRound2] = useState(false);
+  const [emailModal, setEmailModal] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sendingEmails, setSendingEmails] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [scoringModal, setScoringModal] = useState<{ quartets: ContestQuartet[]; index: number; round: 1 | 2 } | null>(null);
+  const [judgeScores, setJudgeScores] = useState<[string, string, string, string]>(['', '', '', '']);
+  const judgeRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
+  const [emailMcModal, setEmailMcModal] = useState(false);
+  const [mcRound, setMcRound] = useState<1 | 2>(1);
+  const [mcEmail, setMcEmail] = useState('');
+  const [mcSingerId, setMcSingerId] = useState<number | ''>('');
+  const [mcSingers, setMcSingers] = useState<{ id: number; badgeName: string; lastName: string; email: string }[]>([]);
+  const [sendingMcEmail, setSendingMcEmail] = useState(false);
+  const [r1Sort, setR1Sort] = useState<SortState | undefined>(undefined);
+  const [r2Sort, setR2Sort] = useState<SortState | undefined>(undefined);
+
+  const numericContestId = contestId ? parseInt(contestId, 10) : null;
+  const numericEventId = contest?.eventId ?? null;
+
+  const canManageContest = !!(numericEventId != null && (
+    user?.isSiteAdmin ||
+    user?.eventRoles.some(r => r.eventId === numericEventId && r.role === 'ContestAdmin')
+  ));
+  const canViewContests = !!(numericEventId != null && (
+    user?.isSiteAdmin ||
+    user?.eventRoles.some(r => r.eventId === numericEventId && ['EventAdmin', 'ContestAdmin'].includes(r.role))
+  ));
+
+  const authHeader = `Bearer ${token ?? ''}`;
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  useEffect(() => {
+    if (scoringModal !== null) judgeRefs.current[0]?.focus();
+  }, [scoringModal?.index]);
+
+  const load = async () => {
+    if (!numericContestId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BASE_URL}/contests/${numericContestId}`, {
+        headers: { Authorization: authHeader },
+      });
+      if (!res.ok) { setError(`Failed to load (HTTP ${res.status})`); return; }
+      const data = await res.json() as { eventName: string; contest: ContestData; showScores: boolean };
+      setEventName(data.eventName);
+      setContest(data.contest);
+      setShowScores(data.showScores);
+      const scoreMap: Record<number, string> = {};
+      const score2Map: Record<number, string> = {};
+      const nameMap: Record<number, string> = {};
+      data.contest.quartets.forEach(q => {
+        scoreMap[q.id] = q.score != null ? String(q.score) : '';
+        score2Map[q.id] = q.score2 != null ? String(q.score2) : '';
+        nameMap[q.id] = q.name;
+      });
+      setScores(scoreMap);
+      setScores2(score2Map);
+      setNames(nameMap);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { if (numericContestId) load(); }, [numericContestId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openEmailModal = () => {
+    setEmailSubject(DEFAULT_EMAIL_SUBJECT);
+    setEmailBody(DEFAULT_EMAIL_BODY);
+    setEmailModal(true);
+  };
+
+  const handleSendEmails = async () => {
+    if (!contest) return;
+    setSendingEmails(true);
+    try {
+      const res = await fetch(`${BASE_URL}/contests/${contest.id}/send-emails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ subject: emailSubject, body: emailBody }),
+      });
+      if (!res.ok) {
+        alert('Failed to send emails. Check that ACS is configured on the server.');
+        return;
+      }
+      setEmailModal(false);
+      setToast('Emails have been scheduled successfully.');
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
+  const openEmailMcModal = async (round: 1 | 2 = 1) => {
+    setMcEmail('');
+    setMcSingerId('');
+    setMcRound(round);
+    setEmailMcModal(true);
+    if (numericEventId) {
+      const res = await fetch(`${BASE_URL}/events/${numericEventId}/singers`, {
+        headers: { Authorization: authHeader },
+      });
+      if (res.ok) setMcSingers(await res.json());
+    }
+  };
+
+  const handleSendMcEmail = async () => {
+    if (!contest) return;
+    setSendingMcEmail(true);
+    try {
+      const res = await fetch(`${BASE_URL}/contests/${contest.id}/email-mc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({
+          email: mcEmail.trim() || null,
+          singerId: mcSingerId !== '' ? mcSingerId : null,
+          round: mcRound,
+        }),
+      });
+      if (!res.ok) {
+        alert('Failed to send MC email. Check that ACS is configured on the server.');
+        return;
+      }
+      setEmailMcModal(false);
+      setToast('MC email sent successfully.');
+    } finally {
+      setSendingMcEmail(false);
+    }
+  };
+
+  const handleRename = async () => {
+    if (!editingName?.name.trim()) return;
+    await fetch(`${BASE_URL}/contests/${editingName.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify({ name: editingName.name.trim() }),
+    });
+    setEditingName(null);
+    load();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Delete this contest and all its quartets?')) return;
+    await fetch(`${BASE_URL}/contests/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: authHeader },
+    });
+    navigate(`/contests?eventId=${contest?.eventId ?? ''}`);
+  };
+
+  const handleToggleShowToSingers = async (id: number) => {
+    const res = await fetch(`${BASE_URL}/contests/${id}/show-to-singers`, {
+      method: 'PATCH',
+      headers: { Authorization: authHeader },
+    });
+    if (res.ok) {
+      const { showToSingers } = await res.json() as { showToSingers: boolean };
+      setContest(c => c ? { ...c, showToSingers } : c);
+    }
+  };
+
+  const handleGenerate = async (id: number) => {
+    if (contest && contest.quartets.length > 0) {
+      if (!window.confirm('This will delete all existing quartets and generate new ones. Continue?')) return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch(`${BASE_URL}/contests/${id}/generate`, {
+        method: 'POST',
+        headers: { Authorization: authHeader },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        alert(text || 'Failed to generate quartets.');
+        return;
+      }
+      load();
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleNameSave = async (quartetId: number) => {
+    await fetch(`${BASE_URL}/quartets/${quartetId}/name`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify({ name: names[quartetId] ?? '' }),
+    });
+  };
+
+  const handleScoreSave = async (quartetId: number) => {
+    const raw = scores[quartetId] ?? '';
+    const score = raw === '' ? null : parseFloat(raw);
+    if (raw !== '' && isNaN(score as number)) return;
+    await fetch(`${BASE_URL}/quartets/${quartetId}/score`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify({ score }),
+    });
+  };
+
+  const handleScore2Save = async (quartetId: number) => {
+    const raw = scores2[quartetId] ?? '';
+    const score2 = raw === '' ? null : parseFloat(raw);
+    if (raw !== '' && isNaN(score2 as number)) return;
+    await fetch(`${BASE_URL}/quartets/${quartetId}/score2`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify({ score2 }),
+    });
+  };
+
+  const openScoringModal = (c: ContestData) => {
+    const firstUnscored = c.quartets.findIndex(q => scores[q.id] === '' || scores[q.id] == null);
+    setScoringModal({ quartets: c.quartets, index: firstUnscored === -1 ? 0 : firstUnscored, round: 1 });
+    setJudgeScores(['', '', '', '']);
+  };
+
+  const openScoringModalRound2 = (quartets: ContestQuartet[]) => {
+    const firstUnscored = quartets.findIndex(q => scores2[q.id] === '' || scores2[q.id] == null);
+    setScoringModal({ quartets, index: firstUnscored === -1 ? 0 : firstUnscored, round: 2 });
+    setJudgeScores(['', '', '', '']);
+  };
+
+  const handleScoringNext = async () => {
+    if (!scoringModal) return;
+    const quartet = scoringModal.quartets[scoringModal.index];
+    const total = judgeScores.reduce((sum, s) => sum + (parseFloat(s) || 0), 0);
+    const field = scoringModal.round === 2 ? 'score2' : 'score';
+    await fetch(`${BASE_URL}/quartets/${quartet.id}/${field}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+      body: JSON.stringify({ [field]: total }),
+    });
+    if (scoringModal.round === 2) {
+      setScores2(s => ({ ...s, [quartet.id]: String(total) }));
+    } else {
+      setScores(s => ({ ...s, [quartet.id]: String(total) }));
+    }
+    if (scoringModal.index + 1 >= scoringModal.quartets.length) {
+      setScoringModal(null);
+      load();
+    } else {
+      setScoringModal(m => m ? { ...m, index: m.index + 1 } : m);
+      setJudgeScores(['', '', '', '']);
+    }
+  };
+
+  const openRound2Modal = () => {
+    setRound2CountStr(String(contest?.round2Count ?? 4));
+    setRound2AssignSongs(true);
+    setRound2Modal(true);
+  };
+
+  const handlePrepareRound2 = async () => {
+    if (!contest) return;
+    const count = parseInt(round2CountStr, 10);
+    if (isNaN(count) || count < 1) return;
+    setPreparingRound2(true);
+    try {
+      const res = await fetch(`${BASE_URL}/contests/${contest.id}/prepare-round2`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ count, assignSongs: round2AssignSongs }),
+      });
+      if (!res.ok) { alert('Failed to prepare Round 2.'); return; }
+      setRound2Modal(false);
+      load();
+    } finally {
+      setPreparingRound2(false);
+    }
+  };
+
+  const toggleR1Sort = (col: string) =>
+    setR1Sort(prev => {
+      const dir = prev?.col === col ? (prev.dir === 'asc' ? 'desc' : 'asc') : 'asc';
+      return { col, dir };
+    });
+
+  const toggleR2Sort = (col: string) =>
+    setR2Sort(prev => {
+      const dir = prev?.col === col ? (prev.dir === 'asc' ? 'desc' : 'asc') : 'asc';
+      return { col, dir };
+    });
+
+  const si = (sort: SortState | undefined, col: string) =>
+    sort?.col === col ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ' ↕';
+
+  const renderQuartets = (c: ContestData) => {
+    if (c.quartets.length === 0) {
+      return <EmptyMsg>No quartets yet — click Generate Quartets.</EmptyMsg>;
+    }
+
+    const orderedQuartets = applySortQuartets(c.quartets, r1Sort);
+
+    const handleR1Randomize = async () => {
+      const ids = [...c.quartets].sort(() => Math.random() - 0.5).map(q => q.id);
+      await fetch(`${BASE_URL}/contests/${c.id}/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ ids }),
+      });
+      load();
+    };
+
+    const singerQuartetIndices: Record<number, number[]> = {};
+    orderedQuartets.forEach((quartet, idx) => {
+      quartet.singers.forEach(s => {
+        (singerQuartetIndices[s.id] ??= []).push(idx);
+      });
+    });
+
+    const fmt = (quartet: ContestQuartet, quartetIdx: number, part: string) => {
+      const s = quartet.singers.find(s => s.part === part);
+      if (!s) return '—';
+      const name = `${s.badgeName} ${s.lastName}`;
+      const indices = singerQuartetIndices[s.id];
+      if (indices.length < 2) return name;
+      return `${name} (${indices.indexOf(quartetIdx) + 1})`;
+    };
+
+    return (
+      <>
+        <SectionToolbar>
+          {showScores && <SmallBtn onClick={() => openScoringModal(c)}>Score Quartets</SmallBtn>}
+          <SmallBtn onClick={() => openEmailModal()}>Email Quartets</SmallBtn>
+          {canManageContest && <SmallBtn onClick={handleR1Randomize}>Randomize Order</SmallBtn>}
+        </SectionToolbar>
+        <DesktopOnly>
+          <QuartetTable>
+            <thead>
+              <tr>
+                <Th $sortable onClick={() => toggleR1Sort('order')}>#{ si(r1Sort, 'order')}</Th>
+                <Th $sortable onClick={() => toggleR1Sort('name')}>Name{si(r1Sort, 'name')}</Th>
+                <Th $part="Tenor" $sortable onClick={() => toggleR1Sort('tenor')}>Tenor{si(r1Sort, 'tenor')}</Th>
+                <Th $part="Lead" $sortable onClick={() => toggleR1Sort('lead')}>Lead{si(r1Sort, 'lead')}</Th>
+                <Th $part="Baritone" $sortable onClick={() => toggleR1Sort('baritone')}>Baritone{si(r1Sort, 'baritone')}</Th>
+                <Th $part="Bass" $sortable onClick={() => toggleR1Sort('bass')}>Bass{si(r1Sort, 'bass')}</Th>
+                <Th $sortable onClick={() => toggleR1Sort('song')}>Song{si(r1Sort, 'song')}</Th>
+                {showScores && <Th $sortable onClick={() => toggleR1Sort('score')}>Round 1 Score{si(r1Sort, 'score')}</Th>}
+              </tr>
+            </thead>
+            <tbody>
+              {orderedQuartets.map((quartet, idx) => (
+                <tr key={quartet.id}>
+                  <Td>{quartet.sortOrder + 1}</Td>
+                  <Td>
+                    <NameInput
+                      value={names[quartet.id] ?? ''}
+                      placeholder="—"
+                      readOnly={!canManageContest}
+                      onChange={e => canManageContest && setNames(n => ({ ...n, [quartet.id]: e.target.value }))}
+                      onBlur={() => canManageContest && handleNameSave(quartet.id)}
+                      onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleNameSave(quartet.id); }}
+                    />
+                  </Td>
+                  <Td>{fmt(quartet, idx, 'Tenor')}</Td>
+                  <Td>{fmt(quartet, idx, 'Lead')}</Td>
+                  <Td>{fmt(quartet, idx, 'Baritone')}</Td>
+                  <Td>{fmt(quartet, idx, 'Bass')}</Td>
+                  <Td>{quartet.songTitle ?? '—'}</Td>
+                  {showScores && (
+                    <Td>
+                      <ScoreInput
+                        type="number"
+                        step="0.1"
+                        value={scores[quartet.id] ?? ''}
+                        placeholder="—"
+                        onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
+                        onBlur={() => handleScoreSave(quartet.id)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
+                      />
+                    </Td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </QuartetTable>
+        </DesktopOnly>
+        <MobileOnly>
+          {orderedQuartets.map((quartet, idx) => (
+            <MobileQuartetCard key={quartet.id}>
+              <MobileCardTop>
+                <MobileNum>#{quartet.sortOrder + 1}</MobileNum>
+                <MobileNameInput
+                  value={names[quartet.id] ?? ''}
+                  placeholder="Quartet name"
+                  readOnly={!canManageContest}
+                  $readOnly={!canManageContest}
+                  onChange={e => canManageContest && setNames(n => ({ ...n, [quartet.id]: e.target.value }))}
+                  onBlur={() => canManageContest && handleNameSave(quartet.id)}
+                  onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleNameSave(quartet.id); }}
+                />
+              </MobileCardTop>
+              {showScores && (
+                <MobileScoreRow>
+                  <MobileScoreLabel>Round 1:</MobileScoreLabel>
+                  <MobileScoreInput
+                    type="number"
+                    step="0.1"
+                    value={scores[quartet.id] ?? ''}
+                    placeholder="—"
+                    onChange={e => setScores(s => ({ ...s, [quartet.id]: e.target.value }))}
+                    onBlur={() => handleScoreSave(quartet.id)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleScoreSave(quartet.id); }}
+                  />
+                </MobileScoreRow>
+              )}
+              {PARTS.map(part => (
+                <MobileSingerRow key={part}>
+                  <PartDot $part={part}>{part[0]}</PartDot>
+                  <MobileSingerName>{fmt(quartet, idx, part)}</MobileSingerName>
+                </MobileSingerRow>
+              ))}
+              {quartet.songTitle && (
+                <MobileScoreRow style={{ marginTop: 6 }}>
+                  <MobileScoreLabel>Song:</MobileScoreLabel>
+                  <MobileSingerName>{quartet.songTitle}</MobileSingerName>
+                </MobileScoreRow>
+              )}
+            </MobileQuartetCard>
+          ))}
+        </MobileOnly>
+      </>
+    );
+  };
+
+  const renderRound2 = (c: ContestData) => {
+    if (!c.round2Count) return null;
+
+    const allScored = [...c.quartets]
+      .filter(q => q.score != null)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    const cutoffScore = c.round2Count && allScored.length >= c.round2Count
+      ? allScored[c.round2Count - 1].score
+      : null;
+    const baseTop = cutoffScore != null
+      ? allScored.filter(q => (q.score ?? 0) >= cutoffScore)
+      : allScored.slice(0, c.round2Count ?? allScored.length);
+
+    const handleR2Randomize = async () => {
+      const ids = [...baseTop].sort(() => Math.random() - 0.5).map(q => q.id);
+      await fetch(`${BASE_URL}/contests/${c.id}/reorder2`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ ids }),
+      });
+      load();
+    };
+
+    const hasSortOrder2 = baseTop.length > 0 && baseTop.every(q => q.sortOrder2 > 0);
+    const top = hasSortOrder2
+      ? [...baseTop].sort((a, b) => a.sortOrder2 - b.sortOrder2)
+      : baseTop;
+
+    if (baseTop.length === 0) {
+      return (
+        <Round2Section>
+          <Round2SectionHeader>Round 2 — Top {c.round2Count}</Round2SectionHeader>
+          <EmptyMsg>Enter Round 1 scores to see which quartets advance.</EmptyMsg>
+        </Round2Section>
+      );
+    }
+
+    const quartetRank = new Map(top.map((q, i) => [q.id, i + 1]));
+    const topIndexById = new Map(top.map((q, i) => [q.id, i]));
+
+    const singerR2Indices: Record<number, number[]> = {};
+    top.forEach((quartet, idx) => {
+      quartet.singers.forEach(s => {
+        (singerR2Indices[s.id] ??= []).push(idx);
+      });
+    });
+
+    const activeR2Sort = r2Sort;
+    const displayTop = activeR2Sort?.col === 'rank'
+      ? [...top].sort((a, b) => {
+          const mult = activeR2Sort.dir === 'asc' ? 1 : -1;
+          return mult * ((quartetRank.get(a.id) ?? 0) - (quartetRank.get(b.id) ?? 0));
+        })
+      : applySortQuartets(top, activeR2Sort);
+
+    const fmtR2 = (quartet: ContestQuartet, part: string) => {
+      const s = quartet.singers.find(s => s.part === part);
+      if (!s) return '—';
+      const name = `${s.badgeName} ${s.lastName}`;
+      const indices = singerR2Indices[s.id];
+      if (indices.length < 2) return name;
+      const quartetIdx = topIndexById.get(quartet.id) ?? 0;
+      return `${name} (${indices.indexOf(quartetIdx) + 1})`;
+    };
+
+    return (
+      <Round2Section>
+        <Round2SectionHeader>
+          <span>Round 2 — Top {c.round2Count}</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {showScores && <SmallBtn onClick={() => openScoringModalRound2(top)}>Score Quartets</SmallBtn>}
+            <SmallBtn onClick={() => openEmailMcModal(2)}>Email MC</SmallBtn>
+            {canManageContest && <SmallBtn onClick={handleR2Randomize}>Randomize Order</SmallBtn>}
+          </div>
+        </Round2SectionHeader>
+
+        <DesktopOnly>
+          <QuartetTable>
+            <thead>
+              <tr>
+                <Th $sortable onClick={() => toggleR2Sort('rank')}>#{ si(activeR2Sort, 'rank')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort('name')}>Name{si(activeR2Sort, 'name')}</Th>
+                <Th $part="Tenor" $sortable onClick={() => toggleR2Sort('tenor')}>Tenor{si(activeR2Sort, 'tenor')}</Th>
+                <Th $part="Lead" $sortable onClick={() => toggleR2Sort('lead')}>Lead{si(activeR2Sort, 'lead')}</Th>
+                <Th $part="Baritone" $sortable onClick={() => toggleR2Sort('baritone')}>Baritone{si(activeR2Sort, 'baritone')}</Th>
+                <Th $part="Bass" $sortable onClick={() => toggleR2Sort('bass')}>Bass{si(activeR2Sort, 'bass')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort('song2')}>Song{si(activeR2Sort, 'song2')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort('score')}>R1 Score{si(activeR2Sort, 'score')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort('score2')}>Round 2 Score{si(activeR2Sort, 'score2')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort('total')}>Total{si(activeR2Sort, 'total')}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayTop.map((quartet) => {
+                const r1 = quartet.score;
+                const r2Raw = scores2[quartet.id];
+                const r2 = r2Raw !== '' && r2Raw != null ? parseFloat(r2Raw) : null;
+                const total = r1 != null && r2 != null && !isNaN(r2) ? r1 + r2 : null;
+                return (
+                  <tr key={quartet.id}>
+                    <Td>{quartetRank.get(quartet.id)}</Td>
+                    <Td>{names[quartet.id] ?? quartet.name}</Td>
+                    <Td>{fmtR2(quartet, 'Tenor')}</Td>
+                    <Td>{fmtR2(quartet, 'Lead')}</Td>
+                    <Td>{fmtR2(quartet, 'Baritone')}</Td>
+                    <Td>{fmtR2(quartet, 'Bass')}</Td>
+                    <Td>{quartet.song2Title ?? '—'}</Td>
+                    <Td><R1Score>{quartet.score}</R1Score></Td>
+                    <Td>
+                      <ScoreInput
+                        type="number"
+                        step="0.1"
+                        value={scores2[quartet.id] ?? ''}
+                        placeholder="—"
+                        readOnly={!canManageContest}
+                        onChange={e => canManageContest && setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                        onBlur={() => canManageContest && handleScore2Save(quartet.id)}
+                        onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleScore2Save(quartet.id); }}
+                      />
+                    </Td>
+                    <Td>{total != null ? total.toFixed(1) : '—'}</Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </QuartetTable>
+        </DesktopOnly>
+
+        <MobileOnly>
+          {displayTop.map((quartet) => {
+            const r1 = quartet.score;
+            const r2Raw = scores2[quartet.id];
+            const r2 = r2Raw !== '' && r2Raw != null ? parseFloat(r2Raw) : null;
+            const total = r1 != null && r2 != null && !isNaN(r2) ? r1 + r2 : null;
+            return (
+              <MobileQuartetCard key={quartet.id}>
+                <MobileCardTop>
+                  <MobileNum>#{quartetRank.get(quartet.id)}</MobileNum>
+                  <MobileNameInput
+                    value={names[quartet.id] ?? quartet.name}
+                    readOnly
+                    $readOnly
+                  />
+                </MobileCardTop>
+                <MobileScoreRow>
+                  <MobileScoreLabel>R1:</MobileScoreLabel>
+                  <R1Score>{quartet.score}</R1Score>
+                  <MobileScoreLabel>R2:</MobileScoreLabel>
+                  <MobileScoreInput
+                    type="number"
+                    step="0.1"
+                    value={scores2[quartet.id] ?? ''}
+                    placeholder="—"
+                    readOnly={!canManageContest}
+                    onChange={e => canManageContest && setScores2(s => ({ ...s, [quartet.id]: e.target.value }))}
+                    onBlur={() => canManageContest && handleScore2Save(quartet.id)}
+                    onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleScore2Save(quartet.id); }}
+                  />
+                  {total != null && <><MobileScoreLabel>Total:</MobileScoreLabel><R1Score>{total.toFixed(1)}</R1Score></>}
+                </MobileScoreRow>
+                {PARTS.map(part => (
+                  <MobileSingerRow key={part}>
+                    <PartDot $part={part}>{part[0]}</PartDot>
+                    <MobileSingerName>{fmtR2(quartet, part)}</MobileSingerName>
+                  </MobileSingerRow>
+                ))}
+                {quartet.song2Title && (
+                  <MobileScoreRow style={{ marginTop: 6 }}>
+                    <MobileScoreLabel>Song:</MobileScoreLabel>
+                    <MobileSingerName>{quartet.song2Title}</MobileSingerName>
+                  </MobileScoreRow>
+                )}
+              </MobileQuartetCard>
+            );
+          })}
+        </MobileOnly>
+      </Round2Section>
+    );
+  };
+
+  if (!loading && !canViewContests && contest) {
+    return (
+      <Container>
+        <Msg $err>You do not have permission to view this contest.</Msg>
+        <div style={{ textAlign: 'center' }}>
+          <Btn onClick={() => navigate('/admin')}>← Back to Admin</Btn>
+        </div>
+      </Container>
+    );
+  }
+
+  return (
+    <Container>
+      <Header>
+        <TitleBlock>
+          <Title>{contest?.name ?? 'Contest'}</Title>
+          {eventName && <Sub>{eventName}</Sub>}
+        </TitleBlock>
+        <HeaderActions>
+          {canManageContest && contest && (
+            <Btn onClick={() => setEditingName({ id: contest.id, name: contest.name })}>Rename</Btn>
+          )}
+          {canManageContest && (
+            <Btn
+              $variant="primary"
+              disabled={generating}
+              onClick={() => contest && handleGenerate(contest.id)}
+            >
+              {generating ? 'Generating…' : 'Generate Quartets'}
+            </Btn>
+          )}
+          {showScores && contest && (
+            <Btn disabled={contest.quartets.length === 0} onClick={() => openScoringModal(contest)}>
+              Score Quartets
+            </Btn>
+          )}
+          {canManageContest && contest && (
+            <Btn disabled={contest.quartets.length === 0} onClick={openRound2Modal}>
+              Prepare Round 2
+            </Btn>
+          )}
+          {contest && contest.quartets.length > 0 && (
+            <Btn onClick={() => openEmailMcModal(1)}>Email MC</Btn>
+          )}
+          {canManageContest && contest && (
+            <Btn
+              title={contest.showToSingers ? 'Visible on singer pages — click to hide' : 'Hidden from singer pages — click to show'}
+              onClick={() => handleToggleShowToSingers(contest.id)}
+            >
+              {contest.showToSingers ? '👁 Visible to Singers' : '🙈 Hidden from Singers'}
+            </Btn>
+          )}
+          {canManageContest && contest && (
+            <Btn $variant="danger" onClick={() => handleDelete(contest.id)}>Delete</Btn>
+          )}
+          <Btn onClick={() => navigate(`/contests?eventId=${contest?.eventId ?? ''}`)}>← Contests</Btn>
+        </HeaderActions>
+      </Header>
+
+      {loading && <Msg>Loading...</Msg>}
+      {error && <Msg $err>{error}</Msg>}
+
+      {contest && (
+        <ContestCard>
+          {renderQuartets(contest)}
+          {renderRound2(contest)}
+        </ContestCard>
+      )}
+
+      {editingName && (
+        <Overlay>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Rename Contest</ModalTitle>
+            <Field>
+              <Label>Name</Label>
+              <Input
+                autoFocus
+                value={editingName.name}
+                onChange={e => setEditingName(en => en && ({ ...en, name: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') handleRename(); }}
+              />
+            </Field>
+            <ModalActions>
+              <Btn onClick={() => setEditingName(null)}>Cancel</Btn>
+              <Btn $variant="primary" disabled={!editingName.name.trim()} onClick={handleRename}>Save</Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {round2Modal && (
+        <Overlay>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Prepare Round 2</ModalTitle>
+            <Field>
+              <Label>Quartets advancing</Label>
+              <Input
+                autoFocus
+                type="number"
+                min={1}
+                value={round2CountStr}
+                onChange={e => setRound2CountStr(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handlePrepareRound2(); }}
+              />
+            </Field>
+            <CheckRow>
+              <input
+                id="r2-songs"
+                type="checkbox"
+                checked={round2AssignSongs}
+                onChange={e => setRound2AssignSongs(e.target.checked)}
+              />
+              <label htmlFor="r2-songs">Assign songs to advancing quartets</label>
+            </CheckRow>
+            <ModalActions>
+              <Btn onClick={() => setRound2Modal(false)}>Cancel</Btn>
+              <Btn
+                $variant="primary"
+                disabled={preparingRound2 || !round2CountStr || parseInt(round2CountStr, 10) < 1}
+                onClick={handlePrepareRound2}
+              >
+                {preparingRound2 ? 'Preparing…' : 'Prepare'}
+              </Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {emailModal && (
+        <Overlay>
+          <WideModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Email Quartets</ModalTitle>
+            <Field>
+              <Label>Subject</Label>
+              <Input
+                autoFocus
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <Label>Body</Label>
+              <Textarea
+                value={emailBody}
+                onChange={e => setEmailBody(e.target.value)}
+              />
+            </Field>
+            <HelpCard>
+              <HelpTitle>Available tokens</HelpTitle>
+              <HelpGrid>
+                <HelpToken>{'{{event}}'}</HelpToken><span>Event name</span>
+                <HelpToken>{'{{contest}}'}</HelpToken><span>Contest name</span>
+                <HelpToken>{'{{quartet}}'}</HelpToken><span>Quartet name</span>
+                <HelpToken>{'{{tenor}}'}</HelpToken><span>Tenor's name</span>
+                <HelpToken>{'{{tenorEmail}}'}</HelpToken><span>Tenor's email</span>
+                <HelpToken>{'{{lead}}'}</HelpToken><span>Lead's name</span>
+                <HelpToken>{'{{leadEmail}}'}</HelpToken><span>Lead's email</span>
+                <HelpToken>{'{{baritone}}'}</HelpToken><span>Baritone's name</span>
+                <HelpToken>{'{{baritoneEmail}}'}</HelpToken><span>Baritone's email</span>
+                <HelpToken>{'{{bass}}'}</HelpToken><span>Bass's name</span>
+                <HelpToken>{'{{bassEmail}}'}</HelpToken><span>Bass's email</span>
+              </HelpGrid>
+            </HelpCard>
+            <ModalActions>
+              <Btn onClick={() => setEmailModal(false)}>Cancel</Btn>
+              <Btn
+                $variant="primary"
+                disabled={sendingEmails || !emailSubject.trim() || !emailBody.trim()}
+                onClick={handleSendEmails}
+              >
+                {sendingEmails ? 'Sending…' : 'Send Emails'}
+              </Btn>
+            </ModalActions>
+          </WideModalBox>
+        </Overlay>
+      )}
+
+      {scoringModal !== null && (() => {
+        const quartet = scoringModal.quartets[scoringModal.index];
+        const total = judgeScores.reduce((sum, s) => sum + (parseFloat(s) || 0), 0);
+        const allFilled = judgeScores.every(s => s !== '' && !isNaN(parseFloat(s)));
+        const isLast = scoringModal.index + 1 >= scoringModal.quartets.length;
+        return (
+          <Overlay>
+            <ModalBox onClick={e => e.stopPropagation()}>
+              <ModalTitle>
+                Score Quartets ({scoringModal.index + 1} of {scoringModal.quartets.length})
+              </ModalTitle>
+              <ScoringQuartetName>{names[quartet.id] ?? quartet.name}</ScoringQuartetName>
+              {(() => { const song = scoringModal.round === 2 ? quartet.song2Title : quartet.songTitle; return song ? <ScoringSong>{song}</ScoringSong> : <ScoringSong>&nbsp;</ScoringSong>; })()}
+              <JudgeGrid>
+                {([0, 1, 2, 3] as const).map(i => (
+                  <Field key={i}>
+                    <Label>Judge {i + 1}</Label>
+                    <Input
+                      ref={el => { judgeRefs.current[i] = el; }}
+                      autoFocus={i === 0}
+                      type="number"
+                      step="0.1"
+                      value={judgeScores[i]}
+                      onChange={e => setJudgeScores(prev => {
+                        const next = [...prev] as [string, string, string, string];
+                        next[i] = e.target.value;
+                        return next;
+                      })}
+                      onKeyDown={e => {
+                        if (e.key !== 'Enter') return;
+                        if (i < 3) { judgeRefs.current[i + 1]?.focus(); }
+                        else if (allFilled) { handleScoringNext(); }
+                      }}
+                    />
+                  </Field>
+                ))}
+              </JudgeGrid>
+              <JudgeTotal>Total: {allFilled ? total.toFixed(1) : '—'}</JudgeTotal>
+              <ModalActions>
+                <Btn onClick={() => setScoringModal(null)}>Cancel</Btn>
+                <Btn $variant="primary" disabled={!allFilled} onClick={handleScoringNext}>
+                  {isLast ? 'Finish' : 'Next'}
+                </Btn>
+              </ModalActions>
+            </ModalBox>
+          </Overlay>
+        );
+      })()}
+
+      {emailMcModal && (
+        <Overlay>
+          <ModalBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Email MC — {mcRound === 2 ? 'Round 2' : 'Round 1'}</ModalTitle>
+            <Field>
+              <Label>Email address</Label>
+              <Input
+                autoFocus
+                type="email"
+                placeholder="mc@example.com"
+                value={mcEmail}
+                onChange={e => setMcEmail(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <Label>Or select a singer</Label>
+              <select
+                value={mcSingerId}
+                onChange={e => setMcSingerId(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                style={{ padding: '9px', borderRadius: '5px', fontSize: '0.95rem', width: '100%' }}
+              >
+                <option value="">— choose a singer —</option>
+                {mcSingers.map(s => (
+                  <option key={s.id} value={s.id} disabled={!s.email}>
+                    {s.badgeName} {s.lastName}{s.email ? '' : ' (no email)'}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <ModalActions>
+              <Btn onClick={() => setEmailMcModal(false)}>Cancel</Btn>
+              <Btn
+                $variant="primary"
+                disabled={sendingMcEmail || (!mcEmail.trim() && mcSingerId === '')}
+                onClick={handleSendMcEmail}
+              >
+                {sendingMcEmail ? 'Sending…' : 'Send'}
+              </Btn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
+      )}
+
+      {toast && <Toast>{toast}</Toast>}
+    </Container>
+  );
+}

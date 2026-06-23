@@ -13,6 +13,20 @@ public static class ContestEndpoints
 
     public static void MapContestEndpoints(this WebApplication app)
     {
+        app.MapGet("/api/contests/{id:int}", async (int id, AppDbContext db, HttpContext ctx) =>
+        {
+            var contest = await db.Contests
+                .Include(c => c.Quartets)
+                    .ThenInclude(q => q.SingerLinks)
+                        .ThenInclude(sl => sl.Singer)
+                .FirstOrDefaultAsync(c => c.Id == id);
+            if (contest is null) return Results.NotFound();
+            if (!AuthHelpers.CanViewEvent(ctx.User, contest.EventId)) return Results.Forbid();
+            var ev = await db.Events.FindAsync(contest.EventId);
+            var showScores = AuthHelpers.HasEventRole(ctx.User, contest.EventId, EventRole.ContestAdmin);
+            return Results.Ok(new ContestPageDto(ev!.Name, ToDto(contest, showScores), showScores));
+        }).RequireAuthorization();
+
         app.MapGet("/api/events/{id:int}/contests", async (int id, AppDbContext db, HttpContext ctx) =>
         {
             if (!AuthHelpers.CanViewEvent(ctx.User, id)) return Results.Forbid();
