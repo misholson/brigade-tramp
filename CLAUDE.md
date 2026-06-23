@@ -46,9 +46,9 @@ Transient props (not forwarded to the DOM) use the `$` prefix — e.g., `$select
 
 ## Pages
 
-### Main Page
+### Dance Card
 
-The main page is reached by a url of /singer/<code> where code is the unique code in the singer table. This will then load a list of singers you need to sing with, grouped by part (Tenor, Lead, Baritone, Bass in that order) and sorted first by badge name, then by last name.
+The dance card is reached by a url of /singer/<code> where code is the unique code in the singer table. This will then load a list of singers you need to sing with, grouped by part (Tenor, Lead, Baritone, Bass in that order) and sorted first by badge name, then by last name.
 
 Your own card should always be marked as completed.
 
@@ -72,7 +72,7 @@ Once the administrator is logged in they should be redirected to the /admin page
 
 The page at /admin will allow an administrator to do CRUD operations on Events. Events should be cards sorted in reverse chronological order by date.
 
-You can expand an Event card and see a list of singers at that event with links to their individual Main Page (based on their QR codes).
+You can expand an Event card and see a list of singers at that event with links to their individual Dance Card (based on their QR codes).
 
 You can also click a page to import a csv with all the singers for an event.
 

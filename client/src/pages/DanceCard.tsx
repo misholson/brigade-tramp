@@ -44,7 +44,7 @@ const AdminLink = styled(Link)`
   &:hover { text-decoration: underline; }
 `;
 
-export default function MainPage() {
+export default function DanceCard() {
   const { code } = useParams<{ code: string }>();
   const dispatch = useAppDispatch();
   const { currentSinger, status } = useAppSelector(s => s.singer);

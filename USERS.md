@@ -1,6 +1,6 @@
-This is a feature specification for security and users. Singers should still be able to view MainPage anonymously if they have a direct
+This is a feature specification for security and users. Singers should still be able to view DanceCard anonymously if they have a direct
 link. If a user logs in using their Google accounts, it can give them access to admin functionality, or another path to access their
-version of the MainPage.
+version of the DanceCard.
 
 ## User Table
 
@@ -27,7 +27,7 @@ do the following:
 - Add other users to event-specific roles
 - Modify properties of an event
 - Import, add, and edit Singers
-- View links to singers' MainPage and view those pages
+- View links to singers' DanceCard and view those pages
 - Add or modify the song list
 - Download the QR PDF
 - Email singers
@@ -52,7 +52,7 @@ ContestAdmin is the only role that can view contest scores. It can do the follow
 
 This role is assigned to all users by default. It can do the following:
 - When they login, they are shown a page with all the events which have a Singer with the same e-mail address. They can click on that
-  event to view their MainPage for that event
+  event to view their DanceCard for that event
 - If today's date is within the start and end date of one of the events, automatically take the user to their page for that event.
 
 ## Seed

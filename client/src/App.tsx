@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { lightTheme, darkTheme } from './theme';
-import MainPage from './pages/MainPage';
+import DanceCard from './pages/DanceCard';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import EventPage from './pages/EventPage';
@@ -42,7 +42,7 @@ export default function App() {
       <GlobalStyle />
       <BrowserRouter>
         <Routes>
-          <Route path="/singer/:code" element={<MainPage />} />
+          <Route path="/singer/:code" element={<DanceCard />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/my-events" element={
             <ProtectedRoute>

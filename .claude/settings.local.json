@@ -3,7 +3,8 @@
     "allow": [
       "Bash(*)",
       "Bash(dotnet new *)",
-      "PowerShell(Get-ChildItem \"C:\\\\repos\\\\brigade-tramp\\\\server\\\\BrigadeTramp.Api\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object -ExpandProperty FullName)"
+      "PowerShell(Get-ChildItem \"C:\\\\repos\\\\brigade-tramp\\\\server\\\\BrigadeTramp.Api\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(Rename-Item *)"
     ],
     "deny": [
       "Bash(rm -rf *)"
