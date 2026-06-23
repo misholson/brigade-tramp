@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppSelector } from '../hooks/useAppDispatch';
 import { BASE_URL } from '../api/apiClient';
@@ -54,6 +54,15 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'secondary' }>`
   color: #fff;
   &:hover { opacity: 0.85; }
   &:disabled { opacity: 0.5; cursor: default; }
+`;
+
+const BackLink = styled(Link)`
+  font-size: 0.88rem;
+  color: ${p => p.theme.colors.textMuted};
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 12px;
+  &:hover { text-decoration: underline; }
 `;
 
 const ContestCard = styled.div`
@@ -222,6 +231,7 @@ export default function ContestsPage() {
 
   return (
     <Container>
+      <BackLink to={`/admin/events/${eventId}`}>← Event</BackLink>
       <Header>
         <TitleBlock>
           <Title>Contests</Title>
@@ -231,7 +241,6 @@ export default function ContestsPage() {
           {canManageContest && (
             <Btn $variant="primary" onClick={() => { setNewName(''); setShowCreate(true); }}>+ New Contest</Btn>
           )}
-          <Btn onClick={() => navigate('/admin')}>← Admin</Btn>
         </HeaderActions>
       </Header>
 

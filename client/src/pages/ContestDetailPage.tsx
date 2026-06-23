@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppSelector } from '../hooks/useAppDispatch';
 import { BASE_URL } from '../api/apiClient';
@@ -265,6 +265,15 @@ const Msg = styled.div<{ $err?: boolean }>`
   padding: 20px;
   text-align: center;
   color: ${p => p.$err ? '#c62828' : p.theme.colors.textMuted};
+`;
+
+const BackLink = styled(Link)`
+  font-size: 0.88rem;
+  color: ${p => p.theme.colors.textMuted};
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 12px;
+  &:hover { text-decoration: underline; }
 `;
 
 const ContestCard = styled.div`
@@ -1141,6 +1150,7 @@ export default function ContestDetailPage() {
 
   return (
     <Container>
+      <BackLink to={`/contests?eventId=${contest?.eventId ?? ''}`}>← Contests</BackLink>
       <Header>
         <TitleBlock>
           <Title>{contest?.name ?? 'Contest'}</Title>
@@ -1183,7 +1193,6 @@ export default function ContestDetailPage() {
           {canManageContest && contest && (
             <Btn $variant="danger" onClick={() => handleDelete(contest.id)}>Delete</Btn>
           )}
-          <Btn onClick={() => navigate(`/contests?eventId=${contest?.eventId ?? ''}`)}>← Contests</Btn>
         </HeaderActions>
       </Header>
 
