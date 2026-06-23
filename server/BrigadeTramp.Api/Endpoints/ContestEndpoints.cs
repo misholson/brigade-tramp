@@ -449,7 +449,7 @@ public static class ContestEndpoints
                 q.Id, q.Name,
                 showScores ? q.Score : null,
                 showScores ? q.Score2 : null,
-                q.SongTitle, q.Song2Title, q.SortOrder2,
+                q.SongTitle, q.Song2Title, q.SortOrder, q.SortOrder2,
                 q.SingerLinks
                     .Select(sl => new ContestSingerDto(
                         sl.Singer.Id, sl.Singer.BadgeName, sl.Singer.FirstName, sl.Singer.LastName, sl.Singer.Part.ToString()))

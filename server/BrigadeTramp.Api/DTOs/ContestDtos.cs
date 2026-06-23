@@ -1,7 +1,7 @@
 namespace BrigadeTramp.Api.DTOs;
 
 public record ContestSingerDto(int Id, string BadgeName, string FirstName, string LastName, string Part);
-public record ContestQuartetDto(int Id, string Name, decimal? Score, decimal? Score2, string? SongTitle, string? Song2Title, int SortOrder2, List<ContestSingerDto> Singers);
+public record ContestQuartetDto(int Id, string Name, decimal? Score, decimal? Score2, string? SongTitle, string? Song2Title, int SortOrder, int SortOrder2, List<ContestSingerDto> Singers);
 public record ReorderContestDto(List<int> Ids);
 public record SetQuartetNameDto(string Name);
 public record ContestDto(int Id, string Name, int EventId, int? Round2Count, bool ShowToSingers, List<ContestQuartetDto> Quartets);

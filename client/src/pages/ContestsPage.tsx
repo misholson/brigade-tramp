@@ -107,7 +107,7 @@ const QuartetTable = styled.table`
   font-size: 0.85rem;
 `;
 
-const Th = styled.th<{ $part?: string }>`
+const Th = styled.th<{ $part?: string; $sortable?: boolean }>`
   padding: 7px 10px;
   text-align: left;
   font-size: 0.78rem;
@@ -117,6 +117,9 @@ const Th = styled.th<{ $part?: string }>`
   color: ${p => p.$part
     ? (p.theme.parts[p.$part as 'Tenor' | 'Lead' | 'Baritone' | 'Bass']?.labelColor ?? p.theme.colors.textSecondary)
     : p.theme.colors.textSecondary};
+  cursor: ${p => p.$sortable ? 'pointer' : 'default'};
+  user-select: ${p => p.$sortable ? 'none' : 'auto'};
+  &:hover { opacity: ${p => p.$sortable ? 0.75 : 1}; }
 `;
 
 const Td = styled.td`
@@ -460,6 +463,7 @@ interface ContestQuartet {
   score2: number | null;
   songTitle: string | null;
   song2Title: string | null;
+  sortOrder: number;
   sortOrder2: number;
   singers: ContestSinger[];
 }
@@ -474,6 +478,44 @@ interface ContestData {
 }
 
 const PARTS = ['Tenor', 'Lead', 'Baritone', 'Bass'];
+
+type SortState = { col: string; dir: 'asc' | 'desc' };
+
+function applySortQuartets(quartets: ContestQuartet[], sort: SortState | undefined): ContestQuartet[] {
+  if (!sort) return quartets;
+  const { col, dir } = sort;
+  const mult = dir === 'asc' ? 1 : -1;
+  const numCmp = (a: number | null, b: number | null) => {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return a - b;
+  };
+  return [...quartets].sort((a, b) => {
+    let cmp = 0;
+    switch (col) {
+      case 'name': cmp = a.name.localeCompare(b.name); break;
+      case 'tenor': case 'lead': case 'baritone': case 'bass': {
+        const part = col[0].toUpperCase() + col.slice(1);
+        cmp = (a.singers.find(s => s.part === part)?.badgeName ?? '')
+          .localeCompare(b.singers.find(s => s.part === part)?.badgeName ?? '');
+        break;
+      }
+      case 'order': cmp = a.sortOrder - b.sortOrder; break;
+      case 'song': cmp = (a.songTitle ?? '').localeCompare(b.songTitle ?? ''); break;
+      case 'song2': cmp = (a.song2Title ?? '').localeCompare(b.song2Title ?? ''); break;
+      case 'score': cmp = numCmp(a.score, b.score); break;
+      case 'score2': cmp = numCmp(a.score2, b.score2); break;
+      case 'total': {
+        const aT = a.score != null && a.score2 != null ? a.score + a.score2 : null;
+        const bT = b.score != null && b.score2 != null ? b.score + b.score2 : null;
+        cmp = numCmp(aT, bT);
+        break;
+      }
+    }
+    return mult * cmp;
+  });
+}
 
 const DEFAULT_EMAIL_SUBJECT = '{{event}} {{contest}} Quartet Assignment: {{quartet}}';
 const DEFAULT_EMAIL_BODY = `Your quartet assignment for the {{contest}} at {{event}} is below. If you are assigned to two quartets you may receive two e-mails, please watch your e-mail for this possibility:
@@ -520,6 +562,8 @@ export default function ContestsPage() {
   const [mcSingerId, setMcSingerId] = useState<number | ''>('');
   const [mcSingers, setMcSingers] = useState<{ id: number; badgeName: string; lastName: string; email: string }[]>([]);
   const [sendingMcEmail, setSendingMcEmail] = useState(false);
+  const [r1Sort, setR1Sort] = useState<Record<number, SortState>>({});
+  const [r2Sort, setR2Sort] = useState<Record<number, SortState>>({});
 
   const numericEventId = eventId ? parseInt(eventId, 10) : null;
   const canManageContest = numericEventId != null && (
@@ -829,6 +873,9 @@ export default function ContestsPage() {
       );
     }
 
+    const quartetRank = new Map(top.map((q, i) => [q.id, i + 1]));
+    const topIndexById = new Map(top.map((q, i) => [q.id, i]));
+
     const singerR2Indices: Record<number, number[]> = {};
     top.forEach((quartet, idx) => {
       quartet.singers.forEach(s => {
@@ -836,12 +883,21 @@ export default function ContestsPage() {
       });
     });
 
-    const fmtR2 = (quartet: ContestQuartet, quartetIdx: number, part: string) => {
+    const activeR2Sort = r2Sort[contest.id];
+    const displayTop = activeR2Sort?.col === 'rank'
+      ? [...top].sort((a, b) => {
+          const mult = activeR2Sort.dir === 'asc' ? 1 : -1;
+          return mult * ((quartetRank.get(a.id) ?? 0) - (quartetRank.get(b.id) ?? 0));
+        })
+      : applySortQuartets(top, activeR2Sort);
+
+    const fmtR2 = (quartet: ContestQuartet, part: string) => {
       const s = quartet.singers.find(s => s.part === part);
       if (!s) return '—';
       const name = `${s.badgeName} ${s.lastName}`;
       const indices = singerR2Indices[s.id];
       if (indices.length < 2) return name;
+      const quartetIdx = topIndexById.get(quartet.id) ?? 0;
       return `${name} (${indices.indexOf(quartetIdx) + 1})`;
     };
 
@@ -860,32 +916,32 @@ export default function ContestsPage() {
           <QuartetTable>
             <thead>
               <tr>
-                <Th>Rank</Th>
-                <Th>Name</Th>
-                <Th $part="Tenor">Tenor</Th>
-                <Th $part="Lead">Lead</Th>
-                <Th $part="Baritone">Baritone</Th>
-                <Th $part="Bass">Bass</Th>
-                <Th>Song</Th>
-                <Th>R1 Score</Th>
-                <Th>Round 2 Score</Th>
-                <Th>Total</Th>
+                <Th $sortable onClick={() => toggleR2Sort(contest.id, 'rank')}>#{ si(activeR2Sort, 'rank')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort(contest.id, 'name')}>Name{si(r2Sort[contest.id], 'name')}</Th>
+                <Th $part="Tenor" $sortable onClick={() => toggleR2Sort(contest.id, 'tenor')}>Tenor{si(r2Sort[contest.id], 'tenor')}</Th>
+                <Th $part="Lead" $sortable onClick={() => toggleR2Sort(contest.id, 'lead')}>Lead{si(r2Sort[contest.id], 'lead')}</Th>
+                <Th $part="Baritone" $sortable onClick={() => toggleR2Sort(contest.id, 'baritone')}>Baritone{si(r2Sort[contest.id], 'baritone')}</Th>
+                <Th $part="Bass" $sortable onClick={() => toggleR2Sort(contest.id, 'bass')}>Bass{si(r2Sort[contest.id], 'bass')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort(contest.id, 'song2')}>Song{si(r2Sort[contest.id], 'song2')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort(contest.id, 'score')}>R1 Score{si(r2Sort[contest.id], 'score')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort(contest.id, 'score2')}>Round 2 Score{si(r2Sort[contest.id], 'score2')}</Th>
+                <Th $sortable onClick={() => toggleR2Sort(contest.id, 'total')}>Total{si(r2Sort[contest.id], 'total')}</Th>
               </tr>
             </thead>
             <tbody>
-              {top.map((quartet, idx) => {
+              {displayTop.map((quartet) => {
                 const r1 = quartet.score;
                 const r2Raw = scores2[quartet.id];
                 const r2 = r2Raw !== '' && r2Raw != null ? parseFloat(r2Raw) : null;
                 const total = r1 != null && r2 != null && !isNaN(r2) ? r1 + r2 : null;
                 return (
                 <tr key={quartet.id}>
-                  <Td>{idx + 1}</Td>
+                  <Td>{quartetRank.get(quartet.id)}</Td>
                   <Td>{names[quartet.id] ?? quartet.name}</Td>
-                  <Td>{fmtR2(quartet, idx, 'Tenor')}</Td>
-                  <Td>{fmtR2(quartet, idx, 'Lead')}</Td>
-                  <Td>{fmtR2(quartet, idx, 'Baritone')}</Td>
-                  <Td>{fmtR2(quartet, idx, 'Bass')}</Td>
+                  <Td>{fmtR2(quartet, 'Tenor')}</Td>
+                  <Td>{fmtR2(quartet, 'Lead')}</Td>
+                  <Td>{fmtR2(quartet, 'Baritone')}</Td>
+                  <Td>{fmtR2(quartet, 'Bass')}</Td>
                   <Td>{quartet.song2Title ?? '—'}</Td>
                   <Td><R1Score>{quartet.score}</R1Score></Td>
                   <Td>
@@ -909,7 +965,7 @@ export default function ContestsPage() {
         </DesktopOnly>
 
         <MobileOnly>
-          {top.map((quartet, idx) => {
+          {displayTop.map((quartet) => {
             const r1 = quartet.score;
             const r2Raw = scores2[quartet.id];
             const r2 = r2Raw !== '' && r2Raw != null ? parseFloat(r2Raw) : null;
@@ -917,7 +973,7 @@ export default function ContestsPage() {
             return (
             <MobileQuartetCard key={quartet.id}>
               <MobileCardTop>
-                <MobileNum>#{idx + 1}</MobileNum>
+                <MobileNum>#{quartetRank.get(quartet.id)}</MobileNum>
                 <MobileNameInput
                   value={names[quartet.id] ?? quartet.name}
                   readOnly
@@ -943,7 +999,7 @@ export default function ContestsPage() {
               {PARTS.map(part => (
                 <MobileSingerRow key={part}>
                   <PartDot $part={part}>{part[0]}</PartDot>
-                  <MobileSingerName>{fmtR2(quartet, idx, part)}</MobileSingerName>
+                  <MobileSingerName>{fmtR2(quartet, part)}</MobileSingerName>
                 </MobileSingerRow>
               ))}
               {quartet.song2Title && (
@@ -979,12 +1035,29 @@ export default function ContestsPage() {
     );
   }
 
+  const toggleR1Sort = (contestId: number, col: string) =>
+    setR1Sort(prev => {
+      const existing = prev[contestId];
+      const dir = existing?.col === col ? (existing.dir === 'asc' ? 'desc' : 'asc') : 'asc';
+      return { ...prev, [contestId]: { col, dir } };
+    });
+
+  const toggleR2Sort = (contestId: number, col: string) =>
+    setR2Sort(prev => {
+      const existing = prev[contestId];
+      const dir = existing?.col === col ? (existing.dir === 'asc' ? 'desc' : 'asc') : 'asc';
+      return { ...prev, [contestId]: { col, dir } };
+    });
+
+  const si = (sort: SortState | undefined, col: string) =>
+    sort?.col === col ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ' ↕';
+
   const renderQuartets = (contest: ContestData) => {
     if (contest.quartets.length === 0) {
       return <EmptyMsg>No quartets yet — click Generate Quartets.</EmptyMsg>;
     }
 
-    const orderedQuartets = contest.quartets;
+    const orderedQuartets = applySortQuartets(contest.quartets, r1Sort[contest.id]);
 
     const handleR1Randomize = async () => {
       const ids = [...contest.quartets].sort(() => Math.random() - 0.5).map(q => q.id);
@@ -1025,20 +1098,20 @@ export default function ContestsPage() {
           <QuartetTable>
             <thead>
               <tr>
-                <Th>#</Th>
-                <Th>Name</Th>
-                <Th $part="Tenor">Tenor</Th>
-                <Th $part="Lead">Lead</Th>
-                <Th $part="Baritone">Baritone</Th>
-                <Th $part="Bass">Bass</Th>
-                <Th>Song</Th>
-                {showScores && <Th>Round 1 Score</Th>}
+                <Th $sortable onClick={() => toggleR1Sort(contest.id, 'order')}>#{ si(r1Sort[contest.id], 'order')}</Th>
+                <Th $sortable onClick={() => toggleR1Sort(contest.id, 'name')}>Name{si(r1Sort[contest.id], 'name')}</Th>
+                <Th $part="Tenor" $sortable onClick={() => toggleR1Sort(contest.id, 'tenor')}>Tenor{si(r1Sort[contest.id], 'tenor')}</Th>
+                <Th $part="Lead" $sortable onClick={() => toggleR1Sort(contest.id, 'lead')}>Lead{si(r1Sort[contest.id], 'lead')}</Th>
+                <Th $part="Baritone" $sortable onClick={() => toggleR1Sort(contest.id, 'baritone')}>Baritone{si(r1Sort[contest.id], 'baritone')}</Th>
+                <Th $part="Bass" $sortable onClick={() => toggleR1Sort(contest.id, 'bass')}>Bass{si(r1Sort[contest.id], 'bass')}</Th>
+                <Th $sortable onClick={() => toggleR1Sort(contest.id, 'song')}>Song{si(r1Sort[contest.id], 'song')}</Th>
+                {showScores && <Th $sortable onClick={() => toggleR1Sort(contest.id, 'score')}>Round 1 Score{si(r1Sort[contest.id], 'score')}</Th>}
               </tr>
             </thead>
             <tbody>
               {orderedQuartets.map((quartet, idx) => (
                 <tr key={quartet.id}>
-                  <Td>{idx + 1}</Td>
+                  <Td>{quartet.sortOrder + 1}</Td>
                   <Td>
                     <NameInput
                       value={names[quartet.id] ?? ''}
@@ -1078,7 +1151,7 @@ export default function ContestsPage() {
           {orderedQuartets.map((quartet, idx) => (
             <MobileQuartetCard key={quartet.id}>
               <MobileCardTop>
-                <MobileNum>#{idx + 1}</MobileNum>
+                <MobileNum>#{quartet.sortOrder + 1}</MobileNum>
                 <MobileNameInput
                   value={names[quartet.id] ?? ''}
                   placeholder="Quartet name"
