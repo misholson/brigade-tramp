@@ -40,7 +40,8 @@ public static class SingerEndpoints
                 allSingers.Select(ToDto).ToList(),
                 sungWithIds,
                 ev?.AllowBusyBee ?? false,
-                sungWithTwiceIds
+                sungWithTwiceIds,
+                singer.EventId
             ));
         });
 

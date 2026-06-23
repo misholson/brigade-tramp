@@ -18,6 +18,7 @@ export interface SingerDetailDto {
   sungWithIds: number[];
   allowBusyBee: boolean;
   sungWithTwiceIds: number[];
+  eventId: number;
 }
 
 export interface EventWithSingersDto {

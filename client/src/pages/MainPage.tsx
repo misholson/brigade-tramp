@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
 import { fetchSingerByCode, toggleSungWith, toggleSungWithTwice } from '../store/singerSlice';
@@ -34,10 +34,21 @@ const CenteredMsg = styled.div`
   font-size: 1rem;
 `;
 
+const AdminLink = styled(Link)`
+  display: block;
+  text-align: center;
+  margin-top: 32px;
+  font-size: 0.82rem;
+  color: ${p => p.theme.colors.textMuted};
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+`;
+
 export default function MainPage() {
   const { code } = useParams<{ code: string }>();
   const dispatch = useAppDispatch();
   const { currentSinger, status } = useAppSelector(s => s.singer);
+  const user = useAppSelector(s => s.auth.user);
   const [songs, setSongs] = useState<string[]>([]);
   const [contestInfos, setContestInfos] = useState<PublicContest[]>([]);
 
@@ -69,7 +80,7 @@ export default function MainPage() {
     return <CenteredMsg>Singer not found.</CenteredMsg>;
   }
 
-  const { singer, allSingers, sungWithIds, allowBusyBee, sungWithTwiceIds } = currentSinger;
+  const { singer, allSingers, sungWithIds, allowBusyBee, sungWithTwiceIds, eventId } = currentSinger;
   const twiceIds = sungWithTwiceIds ?? [];
   const selfPart = singer.part;
 
@@ -122,6 +133,9 @@ export default function MainPage() {
           sungWithTwiceIds={twiceIds}
         />
       ))}
+      {user && (user.isSiteAdmin || user.eventRoles.some(r => r.eventId === eventId && ['EventAdmin', 'ContestAdmin'].includes(r.role))) && (
+        <AdminLink to={`/admin/events/${eventId}`}>Admin</AdminLink>
+      )}
     </Container>
   );
 }
