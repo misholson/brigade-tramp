@@ -869,10 +869,16 @@ export default function ContestsPage() {
                 <Th>Song</Th>
                 <Th>R1 Score</Th>
                 <Th>Round 2 Score</Th>
+                <Th>Total</Th>
               </tr>
             </thead>
             <tbody>
-              {top.map((quartet, idx) => (
+              {top.map((quartet, idx) => {
+                const r1 = quartet.score;
+                const r2Raw = scores2[quartet.id];
+                const r2 = r2Raw !== '' && r2Raw != null ? parseFloat(r2Raw) : null;
+                const total = r1 != null && r2 != null && !isNaN(r2) ? r1 + r2 : null;
+                return (
                 <tr key={quartet.id}>
                   <Td>{idx + 1}</Td>
                   <Td>{names[quartet.id] ?? quartet.name}</Td>
@@ -894,14 +900,21 @@ export default function ContestsPage() {
                       onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleScore2Save(quartet.id); }}
                     />
                   </Td>
+                  <Td>{total != null ? total.toFixed(1) : '—'}</Td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </QuartetTable>
         </DesktopOnly>
 
         <MobileOnly>
-          {top.map((quartet, idx) => (
+          {top.map((quartet, idx) => {
+            const r1 = quartet.score;
+            const r2Raw = scores2[quartet.id];
+            const r2 = r2Raw !== '' && r2Raw != null ? parseFloat(r2Raw) : null;
+            const total = r1 != null && r2 != null && !isNaN(r2) ? r1 + r2 : null;
+            return (
             <MobileQuartetCard key={quartet.id}>
               <MobileCardTop>
                 <MobileNum>#{idx + 1}</MobileNum>
@@ -925,6 +938,7 @@ export default function ContestsPage() {
                   onBlur={() => canManageContest && handleScore2Save(quartet.id)}
                   onKeyDown={e => { if (e.key === 'Enter' && canManageContest) handleScore2Save(quartet.id); }}
                 />
+                {total != null && <><MobileScoreLabel>Total:</MobileScoreLabel><R1Score>{total.toFixed(1)}</R1Score></>}
               </MobileScoreRow>
               {PARTS.map(part => (
                 <MobileSingerRow key={part}>
@@ -939,7 +953,8 @@ export default function ContestsPage() {
                 </MobileScoreRow>
               )}
             </MobileQuartetCard>
-          ))}
+            );
+          })}
         </MobileOnly>
       </Round2Section>
     );
