@@ -86,6 +86,8 @@ using (var scope = app.Services.CreateScope())
             "ALTER TABLE Contests ADD COLUMN ShowToSingers INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE Singers ADD COLUMN DanceCardStatus TEXT NOT NULL DEFAULT 'Required'",
             "ALTER TABLE Singers ADD COLUMN ContestStatus TEXT NOT NULL DEFAULT 'Included'",
+            "ALTER TABLE Singers ADD COLUMN PhotoUrl TEXT",
+            "ALTER TABLE Singers ADD COLUMN ShowEmail INTEGER NOT NULL DEFAULT 0",
         }
         : new[]
         {
@@ -110,6 +112,8 @@ using (var scope = app.Services.CreateScope())
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Contests') AND name='ShowToSingers') ALTER TABLE Contests ADD ShowToSingers BIT NOT NULL DEFAULT 1",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='DanceCardStatus') ALTER TABLE Singers ADD DanceCardStatus NVARCHAR(20) NOT NULL DEFAULT 'Required'",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='ContestStatus') ALTER TABLE Singers ADD ContestStatus NVARCHAR(20) NOT NULL DEFAULT 'Included'",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='PhotoUrl') ALTER TABLE Singers ADD PhotoUrl NVARCHAR(500) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='ShowEmail') ALTER TABLE Singers ADD ShowEmail BIT NOT NULL DEFAULT 0",
         };
 
     foreach (var sql in patches)
@@ -163,6 +167,7 @@ app.MapContestEndpoints();
 app.MapSongEndpoints();
 app.MapUserEndpoints();
 app.MapStatsEndpoints();
+app.MapProfileEndpoints();
 app.MapPdfMergeEndpoints();
 
 app.Run();

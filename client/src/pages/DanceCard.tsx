@@ -9,6 +9,7 @@ import TrampBanner from '../components/TrampBanner';
 import HelpCard from '../components/HelpCard';
 import SongListCard from '../components/SongListCard';
 import ContestInfoCard, { type PublicContest } from '../components/ContestInfoCard';
+import ProfileModal from '../components/ProfileModal';
 import { BASE_URL } from '../api/apiClient';
 
 const PART_ORDER: Part[] = ['Tenor', 'Lead', 'Baritone', 'Bass'];
@@ -19,12 +20,35 @@ const Container = styled.div`
   padding: 16px;
 `;
 
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
 const PageTitle = styled.h1`
   font-size: 1.2rem;
-  margin: 0 0 16px;
-  text-align: center;
+  margin: 0;
   color: ${p => p.theme.colors.text};
   font-weight: 600;
+`;
+
+const EditProfileBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: ${p => p.theme.colors.textMuted};
+  cursor: pointer;
+  flex-shrink: 0;
+  &:hover { background: ${p => p.theme.colors.surfaceAlt}; color: ${p => p.theme.colors.text}; }
 `;
 
 const CenteredMsg = styled.div`
@@ -99,6 +123,7 @@ const ModalBtn = styled.button<{ $primary?: boolean }>`
 `;
 
 
+
 export default function DanceCard() {
   const { code } = useParams<{ code: string }>();
   const dispatch = useAppDispatch();
@@ -107,6 +132,7 @@ export default function DanceCard() {
   const [songs, setSongs] = useState<string[]>([]);
   const [contestInfos, setContestInfos] = useState<PublicContest[]>([]);
   const [showBusyBeeModal, setShowBusyBeeModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const prevIsTrampRef = useRef<boolean | null>(null);
 
   useEffect(() => {
@@ -185,7 +211,15 @@ export default function DanceCard() {
 
   return (
     <Container>
-      <PageTitle>Hi, {singer.badgeName}!</PageTitle>
+      <TitleRow>
+        <PageTitle>Hi, {singer.badgeName}!</PageTitle>
+        <EditProfileBtn onClick={() => setShowProfileModal(true)} title="My Profile">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </EditProfileBtn>
+      </TitleRow>
       <HelpCard />
       <SongListCard songs={songs} />
       {contestInfos.map(c => (
@@ -213,6 +247,13 @@ export default function DanceCard() {
       <AdminLink to={`/events/${eventId}/stats`}>View Stats</AdminLink>
       {user && (user.isSiteAdmin || user.eventRoles.some(r => r.eventId === eventId && ['EventAdmin', 'ContestAdmin'].includes(r.role))) && (
         <AdminLink to={`/admin/events/${eventId}`}>Admin</AdminLink>
+      )}
+
+      {showProfileModal && code && (
+        <ProfileModal
+          code={code}
+          onClose={() => setShowProfileModal(false)}
+        />
       )}
 
       {showBusyBeeModal && (

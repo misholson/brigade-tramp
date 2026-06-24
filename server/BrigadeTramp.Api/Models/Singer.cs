@@ -14,4 +14,6 @@ public class Singer
     public SingerStatus Status { get; set; } = SingerStatus.Active;
     public DanceCardStatus DanceCardStatus { get; set; } = DanceCardStatus.Required;
     public ContestStatus ContestStatus { get; set; } = ContestStatus.Included;
+    public string? PhotoUrl { get; set; }
+    public bool ShowEmail { get; set; } = false;
 }

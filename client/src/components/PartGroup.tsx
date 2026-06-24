@@ -2,6 +2,7 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import type { Part, SingerDto } from '../types';
 import SingerCard from './SingerCard';
+import SingerDetailModal from './SingerDetailModal';
 
 interface Props {
   part: Part;
@@ -62,6 +63,7 @@ const SingerGrid = styled.div`
 
 export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPart, onToggle, isBusyBeeRound, sungWithTwiceIds }: Props) {
   const twiceIds = sungWithTwiceIds ?? [];
+  const [detailSinger, setDetailSinger] = useState<{ singer: SingerDto; checked: boolean } | null>(null);
 
   const remaining = isOwnPart
     ? 0
@@ -88,6 +90,7 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
             const isSelf = singer.id === selfId;
             const isSelected = isSelf || sungWithIds.includes(singer.id);
             const isTwice = isSelf || twiceIds.includes(singer.id);
+            const isChecked = isBusyBeeRound ? isTwice : isSelected;
             return (
               <SingerCard
                 key={singer.id}
@@ -104,10 +107,19 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
                   if (isSelf) return;
                   onToggle(singer, isBusyBeeRound ? isTwice : isSelected);
                 }}
+                onEllipsis={isSelf ? undefined : () => setDetailSinger({ singer, checked: isChecked })}
               />
             );
           })}
         </SingerGrid>
+      )}
+      {detailSinger && (
+        <SingerDetailModal
+          singer={detailSinger.singer}
+          isChecked={detailSinger.checked}
+          onSang={() => { onToggle(detailSinger.singer, false); setDetailSinger(null); }}
+          onClose={() => setDetailSinger(null)}
+        />
       )}
     </GroupWrapper>
   );
