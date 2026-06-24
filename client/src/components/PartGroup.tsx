@@ -66,7 +66,7 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
   const remaining = isOwnPart
     ? 0
     : singers.filter(s => {
-        if (s.id === selfId || s.status === 'Optional') return false;
+        if (s.id === selfId || s.danceCardStatus === 'Optional') return false;
         return isBusyBeeRound ? !twiceIds.includes(s.id) : !sungWithIds.includes(s.id);
       }).length;
 
@@ -97,7 +97,7 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
                 part={singer.part}
                 isSelected={isSelected}
                 isSelf={isSelf}
-                isOptional={singer.status === 'Optional'}
+                isOptional={singer.danceCardStatus === 'Optional'}
                 isBusyBeeRound={isBusyBeeRound}
                 sungWithTwice={isTwice}
                 onClick={() => {

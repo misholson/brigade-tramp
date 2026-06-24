@@ -60,7 +60,7 @@ public static class EventEndpoints
         {
             if (!AuthHelpers.CanViewEvent(ctx.User, id)) return Results.Forbid();
             var singers = await db.Singers
-                .Where(s => s.EventId == id && s.Status != SingerStatus.Inactive)
+                .Where(s => s.EventId == id && s.DanceCardStatus != DanceCardStatus.Hidden)
                 .OrderBy(s => s.BadgeName).ThenBy(s => s.LastName)
                 .Select(s => new { s.Id, s.BadgeName, s.LastName, s.Email })
                 .ToListAsync();
@@ -103,8 +103,8 @@ public static class EventEndpoints
 
             IEnumerable<Singer> singers = dto.Singers switch
             {
-                "ActiveOnly" => ev.Singers.Where(s => s.Status == SingerStatus.Active),
-                "NonOptional" => ev.Singers.Where(s => s.Status != SingerStatus.Optional),
+                "ActiveOnly" => ev.Singers.Where(s => s.DanceCardStatus == DanceCardStatus.Required),
+                "NonOptional" => ev.Singers.Where(s => s.DanceCardStatus != DanceCardStatus.Optional),
                 _ => ev.Singers,
             };
 
@@ -131,8 +131,10 @@ public static class EventEndpoints
             if (!Enum.TryParse<Part>(dto.Part, ignoreCase: true, out var part))
                 return Results.BadRequest("Invalid part. Use Tenor, Lead, Baritone, or Bass.");
 
-            var status = Enum.TryParse<SingerStatus>(dto.Status, ignoreCase: true, out var parsedStatus)
-                ? parsedStatus : SingerStatus.Active;
+            var danceCardStatus = Enum.TryParse<DanceCardStatus>(dto.DanceCardStatus, ignoreCase: true, out var parsedDcs)
+                ? parsedDcs : DanceCardStatus.Required;
+            var contestStatus = Enum.TryParse<ContestStatus>(dto.ContestStatus, ignoreCase: true, out var parsedCs)
+                ? parsedCs : ContestStatus.Included;
 
             var singer = new Singer
             {
@@ -142,7 +144,8 @@ public static class EventEndpoints
                 Part = part,
                 Email = dto.Email,
                 EventId = id,
-                Status = status,
+                DanceCardStatus = danceCardStatus,
+                ContestStatus = contestStatus,
                 Code = await GenerateUniqueCodeAsync(db),
             };
 

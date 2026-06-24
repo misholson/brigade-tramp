@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
-import { fetchEvents, updateEvent, addSinger, editSinger, deleteEvent, updateSingerStatus } from '../store/adminSlice';
+import { fetchEvents, updateEvent, addSinger, editSinger, deleteEvent } from '../store/adminSlice';
 import { selectIsSiteAdmin } from '../store/authSlice';
-import type { SingerDto, SingerStatus, EventUserRoleItemDto } from '../types';
-import type { Part } from '../types';
+import type { SingerDto, EventUserRoleItemDto, Part } from '../types';
 import { BASE_URL } from '../api/apiClient';
 
 /* ── Layout ── */
@@ -88,11 +87,14 @@ const SingerSectionHeader = styled.div`
   border-bottom: 1px solid ${p => p.theme.colors.border};
 `;
 
-const SingerList = styled.div`
+/* ── Mobile singer list ── */
+
+const MobileSingerList = styled.div`
   padding: 10px 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  @media (min-width: 640px) { display: none; }
 `;
 
 const SingerRow = styled.div`
@@ -123,17 +125,6 @@ const SingerLink = styled(Link)`
   &:hover { text-decoration: underline; }
 `;
 
-const StatusSelect = styled.select<{ $status: SingerStatus }>`
-  font-size: 0.78rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid ${p => p.theme.colors.inputBorder};
-  cursor: pointer;
-  background: ${p => p.theme.colors.statusColors[p.$status].bg};
-  color: ${p => p.theme.colors.statusColors[p.$status].text};
-  font-weight: 600;
-`;
-
 const SmallBtn = styled.button`
   padding: 3px 8px;
   border: none;
@@ -150,6 +141,68 @@ const SmallBtn = styled.button`
 const EmptyMsg = styled.span`
   color: ${p => p.theme.colors.textMuted};
   font-size: 0.9rem;
+`;
+
+/* ── Desktop singer table ── */
+
+const DesktopTableWrapper = styled.div`
+  display: none;
+  @media (min-width: 640px) { display: block; }
+  overflow-x: auto;
+`;
+
+const SingerTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+`;
+
+const TH = styled.th`
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: ${p => p.theme.colors.textSecondary};
+  border-bottom: 1px solid ${p => p.theme.colors.border};
+  white-space: nowrap;
+`;
+
+const TD = styled.td`
+  padding: 7px 12px;
+  border-bottom: 1px solid ${p => p.theme.colors.borderLight};
+  vertical-align: middle;
+`;
+
+const PartCircle = styled.span<{ $part: Part }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: ${p => p.theme.parts[p.$part]?.dark ?? '#888'};
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+`;
+
+const StatusPill = styled.span<{ $status: string }>`
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fff;
+  background: ${p => {
+    switch (p.$status) {
+      case 'Required': case 'Included': return '#2e7d32';
+      case 'Optional': return '#e65100';
+      case 'Once': return '#1565c0';
+      case 'Hidden': case 'None': return '#757575';
+      default: return '#9e9e9e';
+    }
+  }};
 `;
 
 /* ── Modals ── */
@@ -170,6 +223,8 @@ const ModalBox = styled.div`
   padding: 28px;
   width: 400px;
   max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
 `;
 
@@ -298,7 +353,8 @@ interface SingerFormState {
   lastName: string;
   part: string;
   email: string;
-  status: string;
+  danceCardStatus: string;
+  contestStatus: string;
 }
 
 /* ── Helpers ── */
@@ -312,7 +368,7 @@ function nextSunday(dateStr: string): string {
 }
 
 const emptySingerForm = (eventId: number): SingerFormState => ({
-  eventId, badgeName: '', firstName: '', lastName: '', part: 'Tenor', email: '', status: 'Active',
+  eventId, badgeName: '', firstName: '', lastName: '', part: 'Tenor', email: '', danceCardStatus: 'Required', contestStatus: 'Included',
 });
 
 /* ── Component ── */
@@ -428,7 +484,8 @@ export default function EventPage() {
       lastName: singer.lastName,
       part: singer.part,
       email: singer.email,
-      status: singer.status,
+      danceCardStatus: singer.danceCardStatus,
+      contestStatus: singer.contestStatus,
       readOnly,
     });
   };
@@ -606,7 +663,9 @@ export default function EventPage() {
 
       <SingerSection>
         <SingerSectionHeader>Singers ({event.singers.length})</SingerSectionHeader>
-        <SingerList>
+
+        {/* Mobile list */}
+        <MobileSingerList>
           {event.singers.length === 0 ? (
             <EmptyMsg>No singers yet.</EmptyMsg>
           ) : (
@@ -616,19 +675,6 @@ export default function EventPage() {
                 <SingerLink to={`/singer/${s.code}`}>
                   {s.badgeName} — {s.firstName} {s.lastName}
                 </SingerLink>
-                {canManage ? (
-                  <StatusSelect
-                    $status={s.status as SingerStatus}
-                    value={s.status}
-                    onChange={e => dispatch(updateSingerStatus({ singerId: s.id, status: e.target.value }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Optional">Optional</option>
-                    <option value="Inactive">Inactive</option>
-                  </StatusSelect>
-                ) : (
-                  <span style={{ fontSize: '0.78rem' }}>{s.status}</span>
-                )}
                 {(canManage || canView) && (
                   <SmallBtn onClick={() => openEditSinger(s, !canManage)}>
                     {canManage ? 'Edit' : 'View'}
@@ -637,7 +683,47 @@ export default function EventPage() {
               </SingerRow>
             ))
           )}
-        </SingerList>
+        </MobileSingerList>
+
+        {/* Desktop table */}
+        <DesktopTableWrapper>
+          {event.singers.length === 0 ? (
+            <div style={{ padding: '10px 16px' }}><EmptyMsg>No singers yet.</EmptyMsg></div>
+          ) : (
+            <SingerTable>
+              <thead>
+                <tr>
+                  <TH>Part</TH>
+                  <TH>Badge Name</TH>
+                  <TH>Last Name</TH>
+                  <TH>Dance Card Status</TH>
+                  <TH>Contest Status</TH>
+                  <TH />
+                </tr>
+              </thead>
+              <tbody>
+                {event.singers.map(s => (
+                  <tr key={s.id}>
+                    <TD><PartCircle $part={s.part as Part}>{s.part[0]}</PartCircle></TD>
+                    <TD>
+                      <SingerLink to={`/singer/${s.code}`}>{s.badgeName}</SingerLink>
+                    </TD>
+                    <TD>{s.lastName}</TD>
+                    <TD><StatusPill $status={s.danceCardStatus}>{s.danceCardStatus}</StatusPill></TD>
+                    <TD><StatusPill $status={s.contestStatus}>{s.contestStatus}</StatusPill></TD>
+                    <TD>
+                      {(canManage || canView) && (
+                        <SmallBtn onClick={() => openEditSinger(s, !canManage)}>
+                          {canManage ? 'Edit' : 'View'}
+                        </SmallBtn>
+                      )}
+                    </TD>
+                  </tr>
+                ))}
+              </tbody>
+            </SingerTable>
+          )}
+        </DesktopTableWrapper>
       </SingerSection>
 
       {/* Edit event modal */}
@@ -712,9 +798,15 @@ export default function EventPage() {
               </Select>
             </Field>
             <Field>
-              <Label>Status</Label>
-              <Select value={editSingerForm.status} disabled={editSingerForm.readOnly} onChange={e => setEditSingerForm(f => f && ({ ...f, status: e.target.value }))}>
-                <option>Active</option><option>Optional</option><option>Inactive</option>
+              <Label>Dance Card Status</Label>
+              <Select value={editSingerForm.danceCardStatus} disabled={editSingerForm.readOnly} onChange={e => setEditSingerForm(f => f && ({ ...f, danceCardStatus: e.target.value }))}>
+                <option>Required</option><option>Optional</option><option>Hidden</option>
+              </Select>
+            </Field>
+            <Field>
+              <Label>Contest Status</Label>
+              <Select value={editSingerForm.contestStatus} disabled={editSingerForm.readOnly} onChange={e => setEditSingerForm(f => f && ({ ...f, contestStatus: e.target.value }))}>
+                <option>Included</option><option>Once</option><option>None</option>
               </Select>
             </Field>
             <ModalActions>
@@ -753,9 +845,15 @@ export default function EventPage() {
               </Select>
             </Field>
             <Field>
-              <Label>Status</Label>
-              <Select value={singerForm.status} onChange={e => setSingerForm(f => f && ({ ...f, status: e.target.value }))}>
-                <option>Active</option><option>Optional</option><option>Inactive</option>
+              <Label>Dance Card Status</Label>
+              <Select value={singerForm.danceCardStatus} onChange={e => setSingerForm(f => f && ({ ...f, danceCardStatus: e.target.value }))}>
+                <option>Required</option><option>Optional</option><option>Hidden</option>
+              </Select>
+            </Field>
+            <Field>
+              <Label>Contest Status</Label>
+              <Select value={singerForm.contestStatus} onChange={e => setSingerForm(f => f && ({ ...f, contestStatus: e.target.value }))}>
+                <option>Included</option><option>Once</option><option>None</option>
               </Select>
             </Field>
             <ModalActions>
@@ -799,7 +897,7 @@ export default function EventPage() {
               <Label htmlFor="email-singers">Singers</Label>
               <Select id="email-singers" value={emailSingers} onChange={e => setEmailSingers(e.target.value as 'All' | 'ActiveOnly' | 'NonOptional')}>
                 <option value="All">All</option>
-                <option value="ActiveOnly">Active only</option>
+                <option value="ActiveOnly">Required only</option>
                 <option value="NonOptional">All non-optional</option>
               </Select>
             </Field>

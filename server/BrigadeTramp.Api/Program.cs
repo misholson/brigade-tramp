@@ -84,6 +84,8 @@ using (var scope = app.Services.CreateScope())
             "ALTER TABLE Events ADD COLUMN EmailFooter TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE Events ADD COLUMN EndDate TEXT",
             "ALTER TABLE Contests ADD COLUMN ShowToSingers INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE Singers ADD COLUMN DanceCardStatus TEXT NOT NULL DEFAULT 'Required'",
+            "ALTER TABLE Singers ADD COLUMN ContestStatus TEXT NOT NULL DEFAULT 'Included'",
         }
         : new[]
         {
@@ -106,6 +108,8 @@ using (var scope = app.Services.CreateScope())
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Events') AND name='EmailFooter') ALTER TABLE Events ADD EmailFooter NVARCHAR(MAX) NOT NULL DEFAULT ''",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Events') AND name='EndDate') ALTER TABLE Events ADD EndDate DATE NULL",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Contests') AND name='ShowToSingers') ALTER TABLE Contests ADD ShowToSingers BIT NOT NULL DEFAULT 1",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='DanceCardStatus') ALTER TABLE Singers ADD DanceCardStatus NVARCHAR(20) NOT NULL DEFAULT 'Required'",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Singers') AND name='ContestStatus') ALTER TABLE Singers ADD ContestStatus NVARCHAR(20) NOT NULL DEFAULT 'Included'",
         };
 
     foreach (var sql in patches)

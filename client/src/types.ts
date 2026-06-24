@@ -1,5 +1,6 @@
 export type Part = 'Tenor' | 'Lead' | 'Baritone' | 'Bass';
-export type SingerStatus = 'Active' | 'Inactive' | 'Optional';
+export type DanceCardStatus = 'Required' | 'Optional' | 'Hidden';
+export type ContestStatus = 'Included' | 'Once' | 'None';
 
 export interface SingerDto {
   id: number;
@@ -9,7 +10,8 @@ export interface SingerDto {
   part: Part;
   code: string;
   email: string;
-  status: SingerStatus;
+  danceCardStatus: DanceCardStatus;
+  contestStatus: ContestStatus;
 }
 
 export interface SingerDetailDto {

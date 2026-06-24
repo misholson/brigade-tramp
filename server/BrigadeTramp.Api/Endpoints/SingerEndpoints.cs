@@ -18,7 +18,7 @@ public static class SingerEndpoints
             if (singer is null) return Results.NotFound();
 
             var allSingers = await db.Singers
-                .Where(s => s.EventId == singer.EventId && s.Status != SingerStatus.Inactive)
+                .Where(s => s.EventId == singer.EventId && s.DanceCardStatus != DanceCardStatus.Hidden)
                 .ToListAsync();
 
             allSingers = [.. allSingers
@@ -101,14 +101,17 @@ public static class SingerEndpoints
             if (!AuthHelpers.CanManageEvent(ctx.User, singer.EventId)) return Results.Forbid();
             if (!Enum.TryParse<Part>(dto.Part, ignoreCase: true, out var part))
                 return Results.BadRequest("Invalid part. Use Tenor, Lead, Baritone, or Bass.");
-            if (!Enum.TryParse<SingerStatus>(dto.Status, ignoreCase: true, out var status))
-                return Results.BadRequest("Invalid status. Use Active, Inactive, or Optional.");
+            if (!Enum.TryParse<DanceCardStatus>(dto.DanceCardStatus, ignoreCase: true, out var danceCardStatus))
+                return Results.BadRequest("Invalid dance card status. Use Required, Optional, or Hidden.");
+            if (!Enum.TryParse<ContestStatus>(dto.ContestStatus, ignoreCase: true, out var contestStatus))
+                return Results.BadRequest("Invalid contest status. Use Included, Once, or None.");
             singer.BadgeName = dto.BadgeName;
             singer.FirstName = dto.FirstName;
             singer.LastName = dto.LastName;
             singer.Part = part;
             singer.Email = dto.Email;
-            singer.Status = status;
+            singer.DanceCardStatus = danceCardStatus;
+            singer.ContestStatus = contestStatus;
             await db.SaveChangesAsync();
             return Results.Ok(ToDto(singer));
         }).RequireAuthorization();
@@ -127,5 +130,5 @@ public static class SingerEndpoints
     }
 
     public static SingerDto ToDto(Singer s) =>
-        new(s.Id, s.BadgeName, s.FirstName, s.LastName, s.Part.ToString(), s.Code, s.Email, s.Status.ToString());
+        new(s.Id, s.BadgeName, s.FirstName, s.LastName, s.Part.ToString(), s.Code, s.Email, s.DanceCardStatus.ToString(), s.ContestStatus.ToString());
 }

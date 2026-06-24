@@ -51,7 +51,9 @@ public static class ImportEndpoints
                 .Select(row =>
                 {
                     var part = Enum.TryParse<Part>(row.Part, ignoreCase: true, out var parsed) ? parsed : Part.Lead;
-                    var status = Enum.TryParse<SingerStatus>(row.Status, ignoreCase: true, out var parsedStatus) ? parsedStatus : SingerStatus.Active;
+                    var danceCardStatus = row.Status.Equals("Inactive", StringComparison.OrdinalIgnoreCase) ? DanceCardStatus.Hidden
+                        : row.Status.Equals("Optional", StringComparison.OrdinalIgnoreCase) ? DanceCardStatus.Optional
+                        : DanceCardStatus.Required;
                     return new Singer
                     {
                         BadgeName = row.BadgeName,
@@ -59,7 +61,8 @@ public static class ImportEndpoints
                         LastName = row.LastName,
                         Part = part,
                         Email = row.Email,
-                        Status = status,
+                        DanceCardStatus = danceCardStatus,
+                        ContestStatus = ContestStatus.Included,
                         EventId = id,
                         Code = GenerateUniqueCode(existingCodes),
                     };

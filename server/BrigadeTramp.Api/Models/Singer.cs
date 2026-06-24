@@ -12,4 +12,6 @@ public class Singer
     public string Code { get; set; } = "";
     public string Email { get; set; } = "";
     public SingerStatus Status { get; set; } = SingerStatus.Active;
+    public DanceCardStatus DanceCardStatus { get; set; } = DanceCardStatus.Required;
+    public ContestStatus ContestStatus { get; set; } = ContestStatus.Included;
 }

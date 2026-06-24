@@ -68,7 +68,7 @@ public static class AuthEndpoints
 
             var singers = await db.Singers
                 .Include(s => s.Event)
-                .Where(s => s.Email == email && s.Status != SingerStatus.Inactive)
+                .Where(s => s.Email == email && s.DanceCardStatus != DanceCardStatus.Hidden)
                 .ToListAsync();
 
             var userId = AuthHelpers.GetUserId(ctx.User);

@@ -88,10 +88,10 @@ export default function DanceCard() {
     .map(part => ({ part, singers: allSingers.filter(s => s.part === part) }))
     .filter(g => g.singers.length > 0);
 
-  const requiredOtherPart = allSingers.filter(s => s.id !== singer.id && s.part !== selfPart && s.status !== 'Optional');
+  const requiredOtherPart = allSingers.filter(s => s.id !== singer.id && s.part !== selfPart && s.danceCardStatus !== 'Optional');
   const isTramp = requiredOtherPart.length > 0 && requiredOtherPart.every(s => sungWithIds.includes(s.id));
 
-  const requiredAll = allSingers.filter(s => s.id !== singer.id && s.status !== 'Optional');
+  const requiredAll = allSingers.filter(s => s.id !== singer.id && s.danceCardStatus !== 'Optional');
   const isSuperTramp = requiredAll.length > 0 && requiredAll.every(s => sungWithIds.includes(s.id));
 
   const isBusyBeeRound = allowBusyBee && isTramp;

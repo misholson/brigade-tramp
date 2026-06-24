@@ -97,14 +97,20 @@ public static class ContestEndpoints
                 return Results.Forbid();
 
             var singers = await db.Singers
-                .Where(s => s.EventId == contest.EventId && s.Status != SingerStatus.Inactive && s.Status != SingerStatus.Optional)
+                .Where(s => s.EventId == contest.EventId && s.ContestStatus != ContestStatus.None)
                 .ToListAsync();
 
             var byPart = Enum.GetValues<Part>()
                 .ToDictionary(p => p, p => singers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList());
 
+            // byPart2 is the fallback for overflow; "Once" singers are excluded so they don't appear in a second quartet
+            var includedSingers = singers.Where(s => s.ContestStatus == ContestStatus.Included).ToList();
             var byPart2 = Enum.GetValues<Part>()
-                .ToDictionary(p => p, p => singers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList());
+                .ToDictionary(p => p, p => {
+                    var list = includedSingers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList();
+                    // Fall back to all eligible singers for this part if no Included singers exist
+                    return list.Count > 0 ? list : singers.Where(s => s.Part == p).OrderBy(_ => Random.Shared.Next()).ToList();
+                });
 
             var missingParts = byPart.Where(kv => kv.Value.Count == 0).Select(kv => kv.Key.ToString()).ToList();
             if (missingParts.Count > 0)
@@ -112,6 +118,7 @@ public static class ContestEndpoints
 
             int numQuartets = byPart.Values.Max(l => l.Count);
 
+            db.ContestQuartetSingers.RemoveRange(contest.Quartets.SelectMany(q => q.SingerLinks));
             db.ContestQuartets.RemoveRange(contest.Quartets);
             await db.SaveChangesAsync();
 
