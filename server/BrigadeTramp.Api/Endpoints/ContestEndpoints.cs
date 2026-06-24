@@ -242,6 +242,22 @@ public static class ContestEndpoints
                             shuffled = [.. songTitles.OrderBy(_ => Random.Shared.Next())];
                         topQuartets[i].Song2Title = shuffled[i % songTitles.Count];
                     }
+
+                    // Swap any quartet that got the same song in round 2 as round 1
+                    if (songTitles.Count > 1)
+                    {
+                        for (int i = 0; i < topQuartets.Count; i++)
+                        {
+                            if (topQuartets[i].Song2Title != topQuartets[i].SongTitle) continue;
+                            var swapIdx = Enumerable.Range(0, topQuartets.Count)
+                                .FirstOrDefault(j => j != i
+                                    && topQuartets[j].Song2Title != topQuartets[i].SongTitle
+                                    && topQuartets[i].Song2Title != topQuartets[j].SongTitle, -1);
+                            if (swapIdx >= 0)
+                                (topQuartets[i].Song2Title, topQuartets[swapIdx].Song2Title) =
+                                    (topQuartets[swapIdx].Song2Title, topQuartets[i].Song2Title);
+                        }
+                    }
                 }
             }
             else
