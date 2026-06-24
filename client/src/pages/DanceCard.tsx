@@ -201,7 +201,7 @@ export default function DanceCard() {
   const isBusyBee = isBusyBeeRound && requiredOtherPart.every(s => twiceIds.includes(s.id));
 
   const handleToggle = (s: SingerDto, remove: boolean) => {
-    if (isBusyBeeRound) {
+    if (isBusyBeeRound && s.part !== selfPart) {
       const alreadyTwice = twiceIds.includes(s.id);
       dispatch(toggleSungWithTwice({ singerId: singer.id, otherId: s.id, remove: alreadyTwice }));
     } else {

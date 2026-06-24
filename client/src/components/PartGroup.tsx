@@ -90,7 +90,9 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
             const isSelf = singer.id === selfId;
             const isSelected = isSelf || sungWithIds.includes(singer.id);
             const isTwice = isSelf || twiceIds.includes(singer.id);
-            const isChecked = isBusyBeeRound ? isTwice : isSelected;
+            // Own-part singers never participate in busy bee tracking
+            const effectiveBusyBee = !isOwnPart && !!isBusyBeeRound;
+            const isChecked = effectiveBusyBee ? isTwice : isSelected;
             return (
               <SingerCard
                 key={singer.id}
@@ -101,11 +103,11 @@ export default function PartGroup({ part, singers, selfId, sungWithIds, isOwnPar
                 isSelected={isSelected}
                 isSelf={isSelf}
                 isOptional={singer.danceCardStatus === 'Optional'}
-                isBusyBeeRound={isBusyBeeRound}
+                isBusyBeeRound={effectiveBusyBee}
                 sungWithTwice={isTwice}
                 onClick={() => {
                   if (isSelf) return;
-                  onToggle(singer, isBusyBeeRound ? isTwice : isSelected);
+                  onToggle(singer, isChecked);
                 }}
                 onEllipsis={isSelf ? undefined : () => setDetailSinger({ singer, checked: isChecked })}
               />
