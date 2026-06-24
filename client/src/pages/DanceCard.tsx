@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
@@ -44,6 +44,76 @@ const AdminLink = styled(Link)`
   &:hover { text-decoration: underline; }
 `;
 
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+`;
+
+const ModalBox = styled.div`
+  background: ${p => p.theme.colors.surface};
+  border-radius: 12px;
+  padding: 28px 24px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+`;
+
+const ModalTitle = styled.div`
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 12px;
+  color: ${p => p.theme.colors.text};
+`;
+
+const ModalMessage = styled.div`
+  font-size: 0.95rem;
+  text-align: center;
+  color: ${p => p.theme.colors.textSecondary};
+  margin-bottom: 22px;
+  line-height: 1.5;
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const ModalBtn = styled.button<{ $primary?: boolean }>`
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: ${p => p.$primary ? '#1565c0' : p.theme.colors.surfaceAlt};
+  color: ${p => p.$primary ? '#fff' : p.theme.colors.text};
+  &:hover { opacity: 0.85; }
+`;
+
+const StartBusyBeeBtn = styled.button`
+  display: block;
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  background: linear-gradient(135deg, #7b1fa2, #4a0072);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  &:hover { opacity: 0.9; }
+`;
+
 export default function DanceCard() {
   const { code } = useParams<{ code: string }>();
   const dispatch = useAppDispatch();
@@ -51,6 +121,9 @@ export default function DanceCard() {
   const user = useAppSelector(s => s.auth.user);
   const [songs, setSongs] = useState<string[]>([]);
   const [contestInfos, setContestInfos] = useState<PublicContest[]>([]);
+  const [busyBeeStarted, setBusyBeeStarted] = useState(false);
+  const [showBusyBeeModal, setShowBusyBeeModal] = useState(false);
+  const prevIsTrampRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     if (code) dispatch(fetchSingerByCode(code));
@@ -72,6 +145,26 @@ export default function DanceCard() {
       .catch(() => {});
   }, [code]);
 
+  // Compute isTramp before early returns so the effect can use it.
+  const allowBusyBee = currentSinger?.allowBusyBee ?? false;
+  const isTrampEarly = (() => {
+    if (!currentSinger) return false;
+    const { singer, allSingers, sungWithIds } = currentSinger;
+    const required = allSingers.filter(
+      s => s.id !== singer.id && s.part !== singer.part && s.danceCardStatus !== 'Optional'
+    );
+    return required.length > 0 && required.every(s => sungWithIds.includes(s.id));
+  })();
+
+  useEffect(() => {
+    if (status !== 'succeeded' || !allowBusyBee) return;
+    const prev = prevIsTrampRef.current;
+    prevIsTrampRef.current = isTrampEarly;
+    if (prev === false && isTrampEarly) {
+      setShowBusyBeeModal(true);
+    }
+  }, [isTrampEarly, status, allowBusyBee]);
+
   if (status === 'loading' || (status === 'idle' && !currentSinger)) {
     return <CenteredMsg>Loading...</CenteredMsg>;
   }
@@ -80,7 +173,7 @@ export default function DanceCard() {
     return <CenteredMsg>Singer not found.</CenteredMsg>;
   }
 
-  const { singer, allSingers, sungWithIds, allowBusyBee, sungWithTwiceIds, eventId } = currentSinger;
+  const { singer, allSingers, sungWithIds, sungWithTwiceIds, eventId } = currentSinger;
   const twiceIds = sungWithTwiceIds ?? [];
   const selfPart = singer.part;
 
@@ -94,7 +187,7 @@ export default function DanceCard() {
   const requiredAll = allSingers.filter(s => s.id !== singer.id && s.danceCardStatus !== 'Optional');
   const isSuperTramp = requiredAll.length > 0 && requiredAll.every(s => sungWithIds.includes(s.id));
 
-  const isBusyBeeRound = allowBusyBee && isTramp;
+  const isBusyBeeRound = allowBusyBee && isTramp && busyBeeStarted;
   const isBusyBee = isBusyBeeRound && requiredOtherPart.every(s => twiceIds.includes(s.id));
 
   const handleToggle = (s: SingerDto, remove: boolean) => {
@@ -117,9 +210,14 @@ export default function DanceCard() {
       <TrampBanner
         isTramp={isTramp}
         isSuperTramp={isSuperTramp}
-        allowBusyBee={allowBusyBee}
+        isBusyBeeRound={isBusyBeeRound}
         isBusyBee={isBusyBee}
       />
+      {allowBusyBee && isTramp && !busyBeeStarted && (
+        <StartBusyBeeBtn onClick={() => setBusyBeeStarted(true)}>
+          Start Busy Bee
+        </StartBusyBeeBtn>
+      )}
       {grouped.map(({ part, singers }) => (
         <PartGroup
           key={part}
@@ -135,6 +233,25 @@ export default function DanceCard() {
       ))}
       {user && (user.isSiteAdmin || user.eventRoles.some(r => r.eventId === eventId && ['EventAdmin', 'ContestAdmin'].includes(r.role))) && (
         <AdminLink to={`/admin/events/${eventId}`}>Admin</AdminLink>
+      )}
+
+      {showBusyBeeModal && (
+        <Overlay>
+          <ModalBox>
+            <ModalTitle>Congratulations!</ModalTitle>
+            <ModalMessage>
+              You have sung with everyone! Would you like to start on your Busy Bee Award?
+            </ModalMessage>
+            <ModalActions>
+              <ModalBtn $primary onClick={() => { setBusyBeeStarted(true); setShowBusyBeeModal(false); }}>
+                Yes!
+              </ModalBtn>
+              <ModalBtn onClick={() => setShowBusyBeeModal(false)}>
+                Not Yet
+              </ModalBtn>
+            </ModalActions>
+          </ModalBox>
+        </Overlay>
       )}
     </Container>
   );

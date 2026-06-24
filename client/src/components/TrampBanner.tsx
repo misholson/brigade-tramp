@@ -51,19 +51,19 @@ const BusyBeePrompt = styled.div`
 interface Props {
   isTramp: boolean;
   isSuperTramp: boolean;
-  allowBusyBee?: boolean;
+  isBusyBeeRound?: boolean;
   isBusyBee?: boolean;
 }
 
-export default function TrampBanner({ isTramp, isSuperTramp, allowBusyBee, isBusyBee }: Props) {
+export default function TrampBanner({ isTramp, isSuperTramp, isBusyBeeRound, isBusyBee }: Props) {
   return (
     <>
       {isSuperTramp && <Banner $super>SUPER TRAMP!!</Banner>}
       {!isSuperTramp && isTramp && <Banner $super={false}>TRAMP!</Banner>}
-      {allowBusyBee && isTramp && !isBusyBee && (
+      {isBusyBeeRound && !isBusyBee && (
         <BusyBeePrompt>Sing with everyone again to be a Busy Bee!</BusyBeePrompt>
       )}
-      {allowBusyBee && isBusyBee && <BusyBeeAchieved>You're a busy bee!</BusyBeeAchieved>}
+      {isBusyBee && <BusyBeeAchieved>You're a busy bee!</BusyBeeAchieved>}
     </>
   );
 }
