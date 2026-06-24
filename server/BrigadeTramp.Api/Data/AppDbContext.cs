@@ -47,6 +47,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .Property(s => s.Status)
             .HasConversion<string>();
 
+        modelBuilder.Entity<Singer>()
+            .Property(s => s.DanceCardStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Singer>()
+            .Property(s => s.ContestStatus)
+            .HasConversion<string>();
+
         modelBuilder.Entity<UserEventRole>()
             .HasKey(r => new { r.UserId, r.EventId, r.Role });
 
