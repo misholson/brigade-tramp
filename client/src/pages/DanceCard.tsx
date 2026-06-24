@@ -98,21 +98,6 @@ const ModalBtn = styled.button<{ $primary?: boolean }>`
   &:hover { opacity: 0.85; }
 `;
 
-const StartBusyBeeBtn = styled.button`
-  display: block;
-  width: 100%;
-  padding: 14px;
-  margin-bottom: 16px;
-  border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 800;
-  cursor: pointer;
-  background: linear-gradient(135deg, #7b1fa2, #4a0072);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  &:hover { opacity: 0.9; }
-`;
 
 export default function DanceCard() {
   const { code } = useParams<{ code: string }>();

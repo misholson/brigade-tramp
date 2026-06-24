@@ -232,7 +232,7 @@ export default function StatsPage() {
       <EventName>{eventName}</EventName>
 
       <Card>
-        <CardHeader>Tramp</CardHeader>
+        <CardHeader>Tramp ({tramps.length})</CardHeader>
         <CardBody>
           {tramps.length === 0 ? (
             <EmptyMsg>No Tramps yet — keep singing!</EmptyMsg>
@@ -250,7 +250,7 @@ export default function StatsPage() {
       </Card>
 
       <Card>
-        <CardHeader>Super Tramp</CardHeader>
+        <CardHeader>Super Tramp ({superTramps.length})</CardHeader>
         <CardBody>
           {superTramps.length === 0 ? (
             <EmptyMsg>No Super Tramps yet — keep singing!</EmptyMsg>
@@ -269,7 +269,7 @@ export default function StatsPage() {
 
       {allowBusyBee && (
         <Card>
-          <CardHeader>Busy Bee</CardHeader>
+          <CardHeader>Busy Bee ({busyBees.length})</CardHeader>
           <CardBody>
             {busyBees.length === 0 ? (
               <EmptyMsg>No Busy Bees yet — keep singing!</EmptyMsg>
@@ -288,7 +288,7 @@ export default function StatsPage() {
       )}
 
       <Card>
-        <CardHeader>Close to Tramp</CardHeader>
+        <CardHeader>Close to Tramp ({closeToTramp.length})</CardHeader>
         <CardBody>
           {closeToTramp.length === 0 ? (
             <EmptyMsg>No one is close yet — keep singing!</EmptyMsg>
@@ -306,7 +306,7 @@ export default function StatsPage() {
       </Card>
 
       <Card>
-        <CardHeader>Close to Super Tramp</CardHeader>
+        <CardHeader>Close to Super Tramp ({closeToSuperTramp.length})</CardHeader>
         <CardBody>
           {closeToSuperTramp.length === 0 ? (
             <EmptyMsg>No one is close yet — keep singing!</EmptyMsg>
@@ -325,7 +325,7 @@ export default function StatsPage() {
 
       {allowBusyBee && (
         <Card>
-          <CardHeader>Close to Busy Bee</CardHeader>
+          <CardHeader>Close to Busy Bee ({closeToBusyBee.length})</CardHeader>
           <CardBody>
             {closeToBusyBee.length === 0 ? (
               <EmptyMsg>No one is close yet — keep singing!</EmptyMsg>
