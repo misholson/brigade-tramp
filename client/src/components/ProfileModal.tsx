@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { BASE_URL } from '../api/apiClient';
+import PhotoCropper from './PhotoCropper';
 
 interface SingerProfileDto { photoUrl: string | null; showEmail: boolean; }
 
@@ -26,6 +27,8 @@ const Box = styled.div`
   padding: 28px 24px;
   max-width: 340px;
   width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
@@ -117,6 +120,7 @@ const CloseBtn = styled.button`
 
 export default function ProfileModal({ code, onClose }: Props) {
   const [profile, setProfile] = useState<SingerProfileDto | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -143,14 +147,20 @@ export default function ProfileModal({ code, onClose }: Props) {
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setCropFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadBlob = async (blob: Blob) => {
+    setCropFile(null);
     setError('');
     setUploading(true);
     try {
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', blob, 'photo.jpg');
       const res = await fetch(`${BASE_URL}/singer/${code}/photo`, {
         method: 'POST',
         body: form,
@@ -167,47 +177,56 @@ export default function ProfileModal({ code, onClose }: Props) {
       setError('Upload failed. Please try again.');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   return (
-    <Overlay onClick={onClose}>
+    <Overlay onClick={cropFile ? undefined : onClose}>
       <Box onClick={e => e.stopPropagation()}>
-        <Title>My Profile</Title>
+        {cropFile ? (
+          <PhotoCropper
+            file={cropFile}
+            onSave={uploadBlob}
+            onCancel={() => setCropFile(null)}
+          />
+        ) : (
+          <>
+            <Title>My Profile</Title>
 
-        <PhotoCircle $hasPhoto={!!profile?.photoUrl}>
-          {profile?.photoUrl
-            ? <Photo src={profile.photoUrl} alt="Profile photo" />
-            : <PhotoPlaceholder>👤</PhotoPlaceholder>
-          }
-        </PhotoCircle>
+            <PhotoCircle $hasPhoto={!!profile?.photoUrl}>
+              {profile?.photoUrl
+                ? <Photo src={profile.photoUrl} alt="Profile photo" />
+                : <PhotoPlaceholder>👤</PhotoPlaceholder>
+              }
+            </PhotoCircle>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-        <PhotoBtn disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-          {uploading ? 'Uploading…' : profile?.photoUrl ? 'Change Photo' : 'Upload Photo'}
-        </PhotoBtn>
-
-        {error && <ErrorMsg>{error}</ErrorMsg>}
-
-        {profile !== null && (
-          <CheckRow>
-            <Checkbox
-              type="checkbox"
-              checked={profile.showEmail}
-              onChange={e => handleShowEmailChange(e.target.checked)}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
             />
-            Show my email to others
-          </CheckRow>
-        )}
+            <PhotoBtn disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+              {uploading ? 'Uploading…' : profile?.photoUrl ? 'Change Photo' : 'Upload Photo'}
+            </PhotoBtn>
 
-        <CloseBtn onClick={onClose}>Close</CloseBtn>
+            {error && <ErrorMsg>{error}</ErrorMsg>}
+
+            {profile !== null && (
+              <CheckRow>
+                <Checkbox
+                  type="checkbox"
+                  checked={profile.showEmail}
+                  onChange={e => handleShowEmailChange(e.target.checked)}
+                />
+                Show my email to others
+              </CheckRow>
+            )}
+
+            <CloseBtn onClick={onClose}>Close</CloseBtn>
+          </>
+        )}
       </Box>
     </Overlay>
   );
