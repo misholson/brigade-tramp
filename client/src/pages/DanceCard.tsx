@@ -231,6 +231,7 @@ export default function DanceCard() {
           sungWithTwiceIds={twiceIds}
         />
       ))}
+      <AdminLink to={`/events/${eventId}/stats`}>View Stats</AdminLink>
       {user && (user.isSiteAdmin || user.eventRoles.some(r => r.eventId === eventId && ['EventAdmin', 'ContestAdmin'].includes(r.role))) && (
         <AdminLink to={`/admin/events/${eventId}`}>Admin</AdminLink>
       )}

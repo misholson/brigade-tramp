@@ -11,6 +11,7 @@ import ContestsPage from './pages/ContestsPage';
 import ContestDetailPage from './pages/ContestDetailPage';
 import SingerLandingPage from './pages/SingerLandingPage';
 import PdfMergePage from './pages/PdfMergePage';
+import StatsPage from './pages/StatsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAppSelector } from './hooks/useAppDispatch';
 
@@ -43,6 +44,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/singer/:code" element={<DanceCard />} />
+          <Route path="/events/:id/stats" element={<StatsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/my-events" element={
             <ProtectedRoute>

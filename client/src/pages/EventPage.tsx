@@ -649,6 +649,7 @@ export default function EventPage() {
           </Subtitle>
         </TitleBlock>
         <ActionRow>
+          <Btn $variant="secondary" onClick={() => navigate(`/events/${eventId}/stats`)}>Stats</Btn>
           {canManage && <Btn $variant="secondary" onClick={openEditEvent}>Edit</Btn>}
           {canManage && <Btn $variant="success" onClick={() => setSingerForm(emptySingerForm(eventId))}>+ Singer</Btn>}
           {canManage && <Btn $variant="secondary" onClick={() => navigate(`/import?eventId=${eventId}`)}>Import</Btn>}

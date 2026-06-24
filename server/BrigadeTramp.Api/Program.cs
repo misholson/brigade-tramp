@@ -162,6 +162,7 @@ app.MapQrPdfEndpoints();
 app.MapContestEndpoints();
 app.MapSongEndpoints();
 app.MapUserEndpoints();
+app.MapStatsEndpoints();
 app.MapPdfMergeEndpoints();
 
 app.Run();
