@@ -7,5 +7,6 @@ public class ImportRowDto
     public string LastName { get; set; } = "";
     public string Part { get; set; } = "";
     public string Email { get; set; } = "";
-    public string Status { get; set; } = "";
+    public string DanceCardStatus { get; set; } = "";
+    public string ContestStatus { get; set; } = "";
 }

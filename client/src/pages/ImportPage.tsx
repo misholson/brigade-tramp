@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppSelector } from '../hooks/useAppDispatch';
 import { BASE_URL } from '../api/apiClient';
@@ -8,6 +8,15 @@ const Container = styled.div`
   max-width: 600px;
   margin: 0 auto;
   padding: 24px 16px;
+`;
+
+const BackLink = styled(Link)`
+  display: inline-block;
+  font-size: 0.85rem;
+  color: ${p => p.theme.colors.textSecondary};
+  text-decoration: none;
+  margin-bottom: 12px;
+  &:hover { text-decoration: underline; }
 `;
 
 const Title = styled.h1`
@@ -80,7 +89,6 @@ const StatusMsg = styled.div<{ $ok: boolean }>`
 export default function ImportPage() {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get('eventId');
-  const navigate = useNavigate();
   const token = useAppSelector(s => s.auth.token);
 
   const [csvText, setCsvText] = useState('');
@@ -127,26 +135,27 @@ export default function ImportPage() {
   if (!eventId) {
     return (
       <Container>
+        <BackLink to="/admin">&larr; Event</BackLink>
         <Title>No event selected.</Title>
-        <Btn $variant="secondary" onClick={() => navigate('/admin')}>Back to Admin</Btn>
       </Container>
     );
   }
 
   return (
     <Container>
+      <BackLink to={`/admin/events/${eventId}`}>&larr; Event</BackLink>
       <Title>Import Singers — Event #{eventId}</Title>
 
       <Section>
         <SectionTitle>Upload CSV file</SectionTitle>
         <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleFileChange} />
-        <Hint>Columns: BadgeName, FirstName, LastName, Part, Email (optional), Status (optional — Active/Optional/Inactive, defaults to Active)</Hint>
+        <Hint>Columns: BadgeName, FirstName, LastName, Part, Email (optional), DanceCardStatus (optional — Required/Optional/Hidden, defaults to Required), ContestStatus (optional — Included/Once/None, defaults to Included)</Hint>
       </Section>
 
       <Section>
         <SectionTitle>Or paste CSV text</SectionTitle>
         <Textarea
-          placeholder={`BadgeName,FirstName,LastName,Part,Email,Status\nBubba,John,Smith,Tenor,bubba@example.com,\nDoc,Bill,Jones,Lead,,Optional`}
+          placeholder={`BadgeName,FirstName,LastName,Part,Email,DanceCardStatus,ContestStatus\nBubba,John,Smith,Tenor,bubba@example.com,,\nDoc,Bill,Jones,Lead,,Optional,Once`}
           value={csvText}
           onChange={e => setCsvText(e.target.value)}
         />
@@ -156,7 +165,6 @@ export default function ImportPage() {
         <Btn $variant="primary" disabled={loading || !csvText.trim()} onClick={handleImport}>
           {loading ? 'Importing...' : 'Import'}
         </Btn>
-        <Btn $variant="secondary" onClick={() => navigate('/admin')}>Back to Admin</Btn>
       </BtnRow>
 
       {result && <StatusMsg $ok={result.ok}>{result.message}</StatusMsg>}
