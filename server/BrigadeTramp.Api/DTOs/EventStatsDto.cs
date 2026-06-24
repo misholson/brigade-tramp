@@ -17,5 +17,8 @@ public record EventStatsDto(
     List<AchieverDto> Tramps,
     List<AchieverDto> SuperTramps,
     List<AchieverDto> BusyBees,
+    List<AchieverDto> CloseToTramp,
+    List<AchieverDto> CloseToSuperTramp,
+    List<AchieverDto> CloseToBusyBee,
     EventNumbersDto Numbers
 );

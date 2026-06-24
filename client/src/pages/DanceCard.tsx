@@ -121,7 +121,6 @@ export default function DanceCard() {
   const user = useAppSelector(s => s.auth.user);
   const [songs, setSongs] = useState<string[]>([]);
   const [contestInfos, setContestInfos] = useState<PublicContest[]>([]);
-  const [busyBeeStarted, setBusyBeeStarted] = useState(false);
   const [showBusyBeeModal, setShowBusyBeeModal] = useState(false);
   const prevIsTrampRef = useRef<boolean | null>(null);
 
@@ -187,7 +186,7 @@ export default function DanceCard() {
   const requiredAll = allSingers.filter(s => s.id !== singer.id && s.danceCardStatus !== 'Optional');
   const isSuperTramp = requiredAll.length > 0 && requiredAll.every(s => sungWithIds.includes(s.id));
 
-  const isBusyBeeRound = allowBusyBee && isTramp && busyBeeStarted;
+  const isBusyBeeRound = allowBusyBee && isTramp;
   const isBusyBee = isBusyBeeRound && requiredOtherPart.every(s => twiceIds.includes(s.id));
 
   const handleToggle = (s: SingerDto, remove: boolean) => {
@@ -213,11 +212,6 @@ export default function DanceCard() {
         isBusyBeeRound={isBusyBeeRound}
         isBusyBee={isBusyBee}
       />
-      {allowBusyBee && isTramp && !busyBeeStarted && (
-        <StartBusyBeeBtn onClick={() => setBusyBeeStarted(true)}>
-          Start Busy Bee
-        </StartBusyBeeBtn>
-      )}
       {grouped.map(({ part, singers }) => (
         <PartGroup
           key={part}
@@ -241,14 +235,11 @@ export default function DanceCard() {
           <ModalBox>
             <ModalTitle>Congratulations!</ModalTitle>
             <ModalMessage>
-              You have sung with everyone! Would you like to start on your Busy Bee Award?
+              You are a Harmony Brigade Tramp! Click OK to start Round 2 and become a Busy Bee!
             </ModalMessage>
             <ModalActions>
-              <ModalBtn $primary onClick={() => { setBusyBeeStarted(true); setShowBusyBeeModal(false); }}>
-                Yes!
-              </ModalBtn>
-              <ModalBtn onClick={() => setShowBusyBeeModal(false)}>
-                Not Yet
+              <ModalBtn $primary onClick={() => setShowBusyBeeModal(false) }>
+                OK
               </ModalBtn>
             </ModalActions>
           </ModalBox>

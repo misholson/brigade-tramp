@@ -18,6 +18,9 @@ interface EventStatsDto {
   tramps: AchieverDto[];
   superTramps: AchieverDto[];
   busyBees: AchieverDto[];
+  closeToTramp: AchieverDto[];
+  closeToSuperTramp: AchieverDto[];
+  closeToBusyBee: AchieverDto[];
   numbers: EventNumbersDto;
 }
 
@@ -220,7 +223,7 @@ export default function StatsPage() {
   if (loading) return <CenteredMsg>Loading…</CenteredMsg>;
   if (notFound || !stats) return <CenteredMsg>Event not found.</CenteredMsg>;
 
-  const { eventName, allowBusyBee, tramps, superTramps, busyBees, numbers } = stats;
+  const { eventName, allowBusyBee, tramps, superTramps, busyBees, closeToTramp, closeToSuperTramp, closeToBusyBee, numbers } = stats;
 
   return (
     <Container>
@@ -273,6 +276,62 @@ export default function StatsPage() {
             ) : (
               <AchieverGrid>
                 {busyBees.map(a => (
+                  <AchieverChip key={a.singerId} $part={a.part}>
+                    <PartDot $part={a.part}>{PART_ABBR[a.part]}</PartDot>
+                    {a.badgeName} {a.lastName}
+                  </AchieverChip>
+                ))}
+              </AchieverGrid>
+            )}
+          </CardBody>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>Close to Tramp</CardHeader>
+        <CardBody>
+          {closeToTramp.length === 0 ? (
+            <EmptyMsg>No one is close yet — keep singing!</EmptyMsg>
+          ) : (
+            <AchieverGrid>
+              {closeToTramp.map(a => (
+                <AchieverChip key={a.singerId} $part={a.part}>
+                  <PartDot $part={a.part}>{PART_ABBR[a.part]}</PartDot>
+                  {a.badgeName} {a.lastName}
+                </AchieverChip>
+              ))}
+            </AchieverGrid>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>Close to Super Tramp</CardHeader>
+        <CardBody>
+          {closeToSuperTramp.length === 0 ? (
+            <EmptyMsg>No one is close yet — keep singing!</EmptyMsg>
+          ) : (
+            <AchieverGrid>
+              {closeToSuperTramp.map(a => (
+                <AchieverChip key={a.singerId} $part={a.part}>
+                  <PartDot $part={a.part}>{PART_ABBR[a.part]}</PartDot>
+                  {a.badgeName} {a.lastName}
+                </AchieverChip>
+              ))}
+            </AchieverGrid>
+          )}
+        </CardBody>
+      </Card>
+
+      {allowBusyBee && (
+        <Card>
+          <CardHeader>Close to Busy Bee</CardHeader>
+          <CardBody>
+            {closeToBusyBee.length === 0 ? (
+              <EmptyMsg>No one is close yet — keep singing!</EmptyMsg>
+            ) : (
+              <AchieverGrid>
+                {closeToBusyBee.map(a => (
                   <AchieverChip key={a.singerId} $part={a.part}>
                     <PartDot $part={a.part}>{PART_ABBR[a.part]}</PartDot>
                     {a.badgeName} {a.lastName}
